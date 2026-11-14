@@ -105,7 +105,8 @@ The cloud runs images built from `Eclipse-Arrowhead-go` `main` at `7cb7f7a` (rep
   `20261114-v540`. Volumes, secrets and certificates were kept; `compose.yaml` changed only in the image tag.
 - `scripts/smoke-test.sh`: 13/13 OK; with `SMOKE_ALL=1`: 19/19 OK. `scripts/smoke-security.sh`: passed, 130 checks,
   0 failures.
-- `ARROWHEAD_VERSION` in `base-compose.json` is still `5.2.2`.
+- `ARROWHEAD_VERSION` in `base-compose.json` is `5.4.0` since 2026-11-14. It belongs to the 5.2 cloud's `cloud-monitor-api`
+  service, which `generate.py` drops, so no deployed container receives it.
 
 **2026-11-14, folder rename.** `v530/` is now `generator/`; image, project and host names keep `v530`. Paths in the scripts,
 compose definition and this file were updated, the cloud was redeployed with `generator/deploy.sh up`, and the smoke

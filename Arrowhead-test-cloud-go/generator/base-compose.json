@@ -2177,7 +2177,7 @@
     "src/server.js"
    ],
    "environment": {
-    "ARROWHEAD_VERSION": "5.2.2",
+    "ARROWHEAD_VERSION": "5.4.0",
     "PORT": "8491",
     "ORCHESTRATION_PRIORITY_MODE": "replace",
     "COMPOSE_PROJECT_NAME": "arrowhead-v52-test-cloud-go",
