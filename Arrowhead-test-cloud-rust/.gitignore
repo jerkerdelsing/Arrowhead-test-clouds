@@ -1,3 +1,6 @@
 # Rust test cloud v5.3.0: credentials and runtime state never go into git
 secrets/
 state/
+
+# Live CRL, republished by CertificateAuthority; generator/generate.py creates it when missing
+trust/current.crl.pem

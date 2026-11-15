@@ -9,3 +9,6 @@ runtime/**
 security/crl/
 .env.previous
 /secrets/
+
+# Live CRL of the test manufacturer CA, issued by scripts/manufacturer-crl.sh
+security/manufacturer-crl/manufacturer-ca.crl
