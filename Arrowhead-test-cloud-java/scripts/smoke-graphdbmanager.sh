@@ -59,15 +59,8 @@ for service in graphDataHistorian graphDataProxy; do
   printf '%s' "$systems" | grep -q SmokeClient && ok "$service list-systems" || fail "$service list-systems" "$systems"
 done
 
-# GraphDB: SPARQL on the historian graph with GraphDBManager's own GraphDB user. The password comes from secrets/ on the
-# host through stdin (a container's secret mount is stale after secrets/ is rewritten) and reaches curl in a netrc file.
-query="PREFIX gdm: <https://arrowhead.eu/ns/graphdbmanager#> SELECT (COUNT(?m) AS ?n) FROM <urn:arrowhead:graphdbmanager:historian> WHERE { ?p a gdm:SenMLPack ; gdm:systemName \"SmokeClient\" ; gdm:measurement ?m . ?m gdm:name \"graphSmoke\" ; gdm:value ?v . FILTER(?v = $value) }"
-count=$(secret AH_GRAPHDB_PW_GRAPHDBMANAGER | docker compose exec -T -e QUERY="$query" graphdbmanager-graphdb sh -c '
-  IFS= read -r pw || [ -n "$pw" ]; n=$(mktemp); printf "machine 127.0.0.1 login graphdbmanager password %s\n" "$pw" > "$n"
-  curl -fs --netrc-file "$n" -H "Accept: text/csv" --data-urlencode "query=$QUERY" http://127.0.0.1:7200/repositories/graphdbmanager; rm -f "$n"' |
-  tail -n 1 | tr -d '\r' || true)
-[ "${count:-0}" -ge 1 ] 2>/dev/null && ok "GraphDB holds the pack as RDF ($count measurement)" || fail "GraphDB holds the pack as RDF" "count '$count'"
-anon=$(docker compose exec -T graphdbmanager curl -s -o /dev/null -w '%{http_code}' http://graphdbmanager-graphdb:7200/repositories/graphdbmanager/size || true)
-[ "$anon" = 401 ] && ok "GraphDB refuses anonymous access" || fail "GraphDB refuses anonymous access" "HTTP $anon"
+# The historian is embedded in GraphDBManager: its data is reachable only through the services checked above.
+[ "$(docker compose config --services | grep -cE -- '-graphdb$' || true)" = 0 ] && ok "no GraphDB service" || fail "no GraphDB service" "present"
+docker compose exec -T graphdbmanager bash -c '(exec 3<>/dev/tcp/127.0.0.1/7200) 2>/dev/null' && fail "no GraphDB port" "open" || ok "no GraphDB port"
 
 exit "$failed"
