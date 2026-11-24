@@ -267,6 +267,18 @@ def main() -> None:
     for s in services.values():
         if "depends_on" in s:
             s["depends_on"] = {d: c for d, c in s["depends_on"].items() if d in services}
+        # 2026-11-17: the primary definitions set no restart policy, so 31 of 50 services (support systems, their
+        # databases, docker-proxy) stayed down after a crash; DeviceQoSEvaluator and GraphDB were OOM-killed and not
+        # restarted. A service the console or an operator stops stays stopped (unless-stopped).
+        s.setdefault("restart", "unless-stopped")
+        # the GraphDB container of GraphDBManager is its own service; the console and docker-proxy only start/stop
+        # services listed in MANAGED_SERVICES, so a stopped graphdbmanager-graphdb could not be recovered (2026-11-17)
+        env = s.get("environment") or {}
+        if "MANAGED_SERVICES" in env and "graphdbmanager-graphdb" in services:
+            managed = [m.strip() for m in env["MANAGED_SERVICES"].split(",") if m.strip()]
+            if "graphdbmanager" in managed and "graphdbmanager-graphdb" not in managed:
+                managed.insert(managed.index("graphdbmanager") + 1, "graphdbmanager-graphdb")
+                env["MANAGED_SERVICES"] = ",".join(managed)
     used = {v["source"] for s in services.values() for v in s.get("volumes", []) if v.get("type") == "volume"}
     volumes = {v: {"name": f"{PROJECT}_{v}"} for v in sorted(used)}
     used_nets = {n for s in services.values() for n in (s.get("networks") or {})}

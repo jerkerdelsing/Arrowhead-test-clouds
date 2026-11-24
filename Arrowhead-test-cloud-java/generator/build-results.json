@@ -591,25 +591,25 @@
   "arrowhead-java-v530/ah5-localcloudmanager-java-spring:20261114-v540": {
     "image": "arrowhead-java-v530/ah5-localcloudmanager-java-spring:20261114-v540",
     "result": "PASS",
-    "seconds": 47,
-    "tests": "Tests run: 51, Failures: 0, Errors: 0, Skipped: 0",
-    "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/v530/build-logs/ah5-localcloudmanager-java-spring_20261114-v540.log",
+    "seconds": 18,
+    "tests": "Tests run: 52, Failures: 0, Errors: 0, Skipped: 0",
+    "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/generator/build-logs/ah5-localcloudmanager-java-spring_20261114-v540.log",
     "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudManager-java-spring"
   },
   "arrowhead-java-v530/ah5-localcloudmanager-java-spring-docker-proxy:20261114-v540": {
     "image": "arrowhead-java-v530/ah5-localcloudmanager-java-spring-docker-proxy:20261114-v540",
     "result": "PASS",
-    "seconds": 16,
-    "tests": "Tests run: 7, Failures: 0, Errors: 0, Skipped: 0",
-    "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/v530/build-logs/ah5-localcloudmanager-java-spring-docker-proxy_20261114-v540.log",
+    "seconds": 1,
+    "tests": null,
+    "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/generator/build-logs/ah5-localcloudmanager-java-spring-docker-proxy_20261114-v540.log",
     "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudManager-java-spring"
   },
   "arrowhead-java-v530/ah5-localcloudconfigurator-java:20261114-v540": {
     "image": "arrowhead-java-v530/ah5-localcloudconfigurator-java:20261114-v540",
     "result": "PASS",
-    "seconds": 48,
-    "tests": "Tests run: 42, Failures: 0, Errors: 0, Skipped: 7",
-    "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/v530/build-logs/ah5-localcloudconfigurator-java_20261114-v540.log",
+    "seconds": 15,
+    "tests": "Tests run: 44, Failures: 0, Errors: 0, Skipped: 7",
+    "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/generator/build-logs/ah5-localcloudconfigurator-java_20261114-v540.log",
     "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudConfigurator-java"
   },
   "arrowhead-java-v530/ah5-localcloudconfigurator-java-db:20261114-v540": {

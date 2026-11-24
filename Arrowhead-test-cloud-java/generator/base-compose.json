@@ -4196,7 +4196,7 @@
         "FORCE_BLACKLIST_FILTER": "true",
         "JAVA_TOOL_OPTIONS": "-Xms64m -Xmx256m",
         "LOG4J_CONFIGURATION_FILE": "/app/config/log4j2.xml",
-        "MANAGEMENT_POLICY": "whitelist",
+        "MANAGEMENT_POLICY": "authorization",
         "MANAGEMENT_WHITELIST": "Authentication,LocalCloudManager,DynamicServiceOrchestration,DeviceQoSEvaluator,PlantDescriptionEngine,Onboarding",
         "SERVER_SSL_CLIENT_AUTH": "need",
         "SERVER_SSL_ENABLED": "true",

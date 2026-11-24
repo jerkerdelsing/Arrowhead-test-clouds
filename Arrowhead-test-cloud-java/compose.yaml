@@ -118,7 +118,8 @@
       "pids_limit": 256,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-AIGym-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "amqp-broker": {
       "cap_drop": [
@@ -535,7 +536,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Blacklist-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "blacklist-db": {
       "command": [
@@ -637,7 +639,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Blacklist-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "certificate-authority": {
       "cap_drop": [
@@ -878,7 +881,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-CertificateAuthority-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "choreographer": {
       "cap_drop": [
@@ -998,7 +1002,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Choreographer-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "choreographer-db": {
       "command": [
@@ -1100,7 +1105,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Choreographer-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "cloud-monitor-api": {
       "cap_drop": [
@@ -1138,7 +1144,7 @@
         "LCM_API_WHITELIST": "",
         "LOCAL_CLOUD": "TestCloud",
         "LOCAL_CLOUD_CONFIGURATION_ENABLED": "true",
-        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel",
+        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,graphdbmanager-graphdb,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel",
         "ORGANIZATION": "Company",
         "SERVICE_REGISTRY_ADDRESS": "serviceregistry",
         "SERVICE_REGISTRY_PORT": "8443",
@@ -1220,7 +1226,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "configuration": {
       "cap_drop": [
@@ -1341,7 +1348,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Configuration-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "configuration-db": {
       "command": [
@@ -1443,7 +1451,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Configuration-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "consumerauthorization": {
       "cap_drop": [
@@ -1770,7 +1779,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DataManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "datamanager-db": {
       "command": [
@@ -1872,7 +1882,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DataManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "device-qos-evaluator": {
       "cap_drop": [
@@ -1897,6 +1908,7 @@
       "environment": {
         "AMQP_HOST": "amqp-broker",
         "AMQP_PORT": "5671",
+        "JAVA_TOOL_OPTIONS": "-Xms64m -Xmx256m -XX:MaxMetaspaceSize=192m -XX:MaxDirectMemorySize=128m -Xss512k -XX:NativeMemoryTracking=summary -XX:+ExitOnOutOfMemoryError",
         "LOCAL_CLOUD": "TestCloud",
         "ORGANIZATION": "Company",
         "SERVICE_REGISTRY_ADDRESS": "serviceregistry",
@@ -1991,7 +2003,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DeviceQoSEvaluator-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "device-qos-evaluator-db": {
       "command": [
@@ -2093,7 +2106,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DeviceQoSEvaluator-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "docker-proxy": {
       "cap_drop": [
@@ -2103,10 +2117,11 @@
       "entrypoint": null,
       "environment": {
         "COMPOSE_PROJECT_NAME": "arrowhead-v53-test-cloud",
-        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel"
+        "JAVA_TOOL_OPTIONS": "-Xms32m -Xmx96m -XX:MaxMetaspaceSize=80m -Xss512k -XX:+ExitOnOutOfMemoryError",
+        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,graphdbmanager-graphdb,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel"
       },
       "image": "arrowhead-java-v530/ah5-localcloudmanager-java-spring-docker-proxy:20261114-v540",
-      "mem_limit": "201326592",
+      "mem_limit": "268435456",
       "networks": {
         "console-docker": null
       },
@@ -2132,7 +2147,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "eventhandler": {
       "cap_drop": [
@@ -2256,7 +2272,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-EventHandler-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "eventhandler-db": {
       "command": [
@@ -2358,7 +2375,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-EventHandler-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "gatekeeper": {
       "cap_drop": [
@@ -3021,7 +3039,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-GraphDBManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "graphdbmanager-graphdb": {
       "cap_drop": [
@@ -3037,7 +3056,7 @@
         "GRAPHDB_USER_PASSWORD_FILE": "/run/secrets/graphdb-password"
       },
       "image": "arrowhead-java-v530/ah5-graphdbmanager-java-spring-graphdb:20261114-v540",
-      "mem_limit": "1610612736",
+      "mem_limit": "2147483648",
       "networks": {
         "db-graphdbmanager-graphdb": null
       },
@@ -3070,7 +3089,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-GraphDBManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "localcloudconfigurator": {
       "cap_drop": [
@@ -3201,7 +3221,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudConfigurator-java"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "localcloudconfigurator-db": {
       "command": [
@@ -3303,7 +3324,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudConfigurator-java"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "mqtt-broker": {
       "cap_drop": [
@@ -3522,7 +3544,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Onboarding-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "onboarding-db": {
       "command": [
@@ -3624,7 +3647,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Onboarding-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "plantdescriptionengine": {
       "cap_drop": [
@@ -3750,7 +3774,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-PlantDescriptionEngine-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "plantdescriptionengine-db": {
       "command": [
@@ -3852,7 +3877,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-PlantDescriptionEngine-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "random-data-producer": {
       "cap_drop": [
@@ -4378,7 +4404,7 @@
         "FORCE_BLACKLIST_FILTER": "true",
         "JAVA_TOOL_OPTIONS": "-Xms64m -Xmx256m",
         "LOG4J_CONFIGURATION_FILE": "/app/config/log4j2.xml",
-        "MANAGEMENT_POLICY": "whitelist",
+        "MANAGEMENT_POLICY": "authorization",
         "MANAGEMENT_WHITELIST": "Authentication,LocalCloudManager,DynamicServiceOrchestration,DeviceQoSEvaluator,PlantDescriptionEngine,Onboarding",
         "SERVER_SSL_CLIENT_AUTH": "need",
         "SERVER_SSL_ENABLED": "true",
@@ -4689,7 +4715,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-SoLocalCloudConfigurator-java"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "solocalcloudconfigurator-db": {
       "command": [
@@ -4792,7 +4819,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-SoLocalCloudConfigurator-java"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "sysmonitor": {
       "cap_drop": [
@@ -5035,7 +5063,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-SysMonitor-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "timemanager": {
       "cap_drop": [
@@ -5161,7 +5190,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TimeManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "timemanager-db": {
       "command": [
@@ -5263,7 +5293,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TimeManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "translation-manager": {
       "cap_drop": [
@@ -5382,7 +5413,8 @@
       ],
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TranslationManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     },
     "translation-manager-db": {
       "command": [
@@ -5484,7 +5516,8 @@
       "pids_limit": 512,
       "labels": {
         "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TranslationManager-java-spring"
-      }
+      },
+      "restart": "unless-stopped"
     }
   },
   "networks": {
