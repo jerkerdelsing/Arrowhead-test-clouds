@@ -11,7 +11,7 @@
 #   J14 no Spring Security generated password in any container log
 #   J9  ServiceRegistry refuses core/support service definitions from other systems
 #   J10 the AMQP broker's epmd and Erlang distribution ports are not reachable from other containers
-#   J1  per-database root and system users, no shared ah-operator, databases unreachable from other systems
+#   J1  every system owns its data: embedded database, no database services, networks, ports or shared volumes
 #   J2  no copy of the cloud CA private key anywhere else in the workspace
 #   J15 no container mounts security/x509, security/ca or another system's credentials; CA signing keys only in
 #       security/ca and, for the cloud CA, the CertificateAuthority's bundle
@@ -125,20 +125,26 @@ probe_from() {  # probe_from <service> <host> <port> -> reachable/unreachable
   id=$(docker compose ps -q "$1"); probe="(exec 3<>/dev/tcp/$2/$3) 2>/dev/null && echo reachable || echo unreachable"
   if has_bash "$id"; then docker exec "$id" bash -c "$probe"; else in_namespace "$id" network "$probe"; fi
 }
-for db in $(docker compose config --services | grep -- '-db$'); do
-  # the root password's key, from the service's db-root-password secret (J7)
-  root_key=$(docker compose config --format json | jq -r --arg db "$db" '.services[$db].secrets[]? | select(.target | test("db-root-password$")) | .source' | head -1)
-  operators=$(docker compose exec -T -e MYSQL_PWD="$(secret "$root_key")" "$db" mysql -uroot -N \
-    -e "SELECT COUNT(*) FROM mysql.user WHERE user='ah-operator'" 2>/dev/null || echo error)
-  check "$db: no shared ah-operator user" 0 "$operators"
-  prober=sysmonitor; [ "$db" = sysmonitor-db ] && prober=timemanager
-  check "$db: unreachable from $prober" unreachable "$(probe_from "$prober" "$db" 3306)"
+# Every system keeps its data in its own embedded database (2026-11-24): no database service, no database network, each
+# /data volume mounted by one service only, and no database port inside any system's container.
+check "no database services" 0 "$(docker compose config --services | grep -cE -- '-(db|graphdb)$' || true)"
+check "no database networks" 0 "$(docker compose config --format json | jq '[.networks | keys[] | select(startswith("db-"))] | length')"
+check "each data volume is mounted by one service" 0 "$(docker compose config --format json | jq '[.services[].volumes[]? | select(.type == "volume") | .source] | group_by(.) | map(select(length > 1)) | length')"
+data_services=$(docker compose config --format json | jq -r '.services | to_entries[] | select(any(.value.volumes[]?; .type == "volume" and .target == "/data")) | .key')
+# positive control: the core systems at least have one (a lean cloud has fewer systems than the reference cloud)
+check "ServiceRegistry has an embedded database" serviceregistry "$(echo "$data_services" | grep -x serviceregistry)"
+for s in $data_services; do
+  id=$(docker compose ps -q "$s")
+  check "$s: data folder is its own (mode 700, uid 10001)" "700 10001" "$(docker exec "$id" stat -c '%a %u' /data 2>/dev/null)"
+  check "$s: no database port" closed "$(docker exec "$id" bash -c 'for p in 3306 7200 8082 9092 5435; do (exec 3<>/dev/tcp/127.0.0.1/$p) 2>/dev/null && echo "open $p"; done; true' | head -1 | grep . || echo closed)"
 done
-roots=$(grep -E '^AH_DB_ROOT_[A-Z]+=' .env | cut -d= -f2- | sort -u | wc -l | tr -d ' ')
-check "every database has its own root password" "$(grep -cE '^AH_DB_ROOT_[A-Z]+=' .env)" "$roots"
-# positive control of the probe: DataManager (Java in every deployment of this cloud) reaches its own database. The native
-# core systems of the interchangeability overlays keep file state and are on no database network.
-check "positive control: DataManager reaches its database" reachable "$(probe_from datamanager datamanager-db 3306)"
+# no other container of this Docker host mounts one of these volumes
+project=$(docker compose config --format json | jq -r .name)
+foreign=""
+for v in $(docker compose config --format json | jq -r '.volumes[].name' | grep -- '-state$'); do
+  [ "$(docker ps -aq --filter "volume=$v" | wc -l | tr -d ' ')" -le 1 ] || foreign="$foreign $v"
+done
+check "no second container mounts a data volume of $project" "" "$foreign"
 
 echo "== J2 custody of the cloud CA key"
 ca_pub=$(openssl pkey -in security/bundles/certificate-authority/ca.key -pubout 2>/dev/null | shasum -a 256 | cut -c1-16)
@@ -250,12 +256,6 @@ check "no .env.previous kept after a verified rotation" absent "$([ -e .env.prev
 
 echo "== J8 supported component versions"
 at_least() { [ -n "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n 1)" = "$1" ] && echo "$2" || echo "older than $1: ${2:-unknown}"; }
-old_dbs=""
-for db in $(docker compose config --services | grep -- '-db$'); do
-  version=$(docker compose exec -T "$db" mysqld --version 2>/dev/null | sed -n 's/.*Ver \([0-9.]*\).*/\1/p')
-  case "$version" in 8.4.*) ;; *) old_dbs="$old_dbs $db:${version:-?}" ;; esac
-done
-check "every database runs MySQL 8.4 LTS" "" "$old_dbs"
 # LocalCloudManager console and Docker proxy are Spring/Java 21 since 2026-11-09 (formerly Node.js)
 java_version() { docker compose exec -T "$1" java -version 2>&1 | sed -n 's/.*version "\([0-9.]*\)".*/\1/p' | head -1 || true; }
 java_api=$(java_version cloud-monitor-api)

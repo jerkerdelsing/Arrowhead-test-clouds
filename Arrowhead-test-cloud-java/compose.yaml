@@ -16,7 +16,7 @@
         "ORGANIZATION": "Company",
         "SERVICE_REGISTRY_URL": "https://serviceregistry:8443"
       },
-      "image": "arrowhead-java-v530/ah5-aigym-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-aigym-java-spring:20261124-embedded",
       "mem_limit": "536870912",
       "networks": {
         "arrowhead": {
@@ -117,7 +117,7 @@
       },
       "pids_limit": 256,
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-AIGym-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-AIGym-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -236,10 +236,6 @@
       ],
       "command": null,
       "depends_on": {
-        "authentication-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
         "serviceregistry": {
           "condition": "service_started",
           "required": true
@@ -271,14 +267,12 @@
         "SPRING_AUTOCONFIGURE_EXCLUDE": "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration",
         "SPRING_CONFIG_IMPORT": "configtree:/run/secrets/",
         "SPRING_DATASOURCE_PASSWORD": "$${ah.db-password}",
-        "SPRING_DATASOURCE_URL": "jdbc:mariadb://authentication-db:3306/ah_authentication?sslMode=verify-full&serverSslCert=/etc/arrowhead/db-tls/ca.crt",
         "SYSMONITOR_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/authentication-java:20261114-v540",
+      "image": "arrowhead-java-v530/authentication-java:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
-        "arrowhead": null,
-        "db-authentication": null
+        "arrowhead": null
       },
       "pids_limit": 256,
       "ports": [
@@ -317,13 +311,6 @@
       "volumes": [
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/etc/arrowhead/db-tls/ca.crt",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/runtime/Authentication/config/certificate",
           "target": "/app/config/certificate",
           "read_only": true,
@@ -335,94 +322,11 @@
           "target": "/crl",
           "read_only": true,
           "bind": {}
-        }
-      ]
-    },
-    "authentication-db": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": [
-        "--innodb-use-native-aio=0",
-        "--ssl-ca=/etc/mysql/tls/ca.crt",
-        "--ssl-cert=/etc/mysql/tls/server.crt",
-        "--ssl-key=/etc/mysql/tls/server.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "AH_DB_USER": "authentication",
-        "AH_DB_USER_PASSWORD_FILE": "/run/secrets/db-user-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost"
-        ],
-        "timeout": "3s",
-        "interval": "4s",
-        "retries": 15,
-        "start_period": "20s"
-      },
-      "image": "arrowhead-java-v530/authentication-db:20261114-v540",
-      "mem_limit": "805306368",
-      "networks": {
-        "db-authentication": null
-      },
-      "pids_limit": 512,
-      "read_only": true,
-      "restart": "unless-stopped",
-      "secrets": [
-        {
-          "source": "AH_DB_ROOT_AUTHENTICATION",
-          "target": "db-root-password"
         },
-        {
-          "source": "AH_DB_PW_AUTHENTICATION",
-          "target": "db-user-password"
-        }
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "user": "999:999",
-      "volumes": [
         {
           "type": "volume",
-          "source": "authentication-db",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/authentication-db",
-          "target": "/etc/mysql/tls",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/zz-arrowhead-system-user-password.sh",
-          "target": "/docker-entrypoint-initdb.d/zz-arrowhead-system-user-password.sh",
-          "read_only": true,
-          "bind": {}
+          "source": "authentication-state",
+          "target": "/data"
         }
       ]
     },
@@ -431,16 +335,6 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "blacklist-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "serviceregistry": {
-          "condition": "service_started",
-          "required": true
-        }
-      },
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -453,15 +347,14 @@
         "MANAGEMENT_POLICY": "authorization",
         "MANAGEMENT_WHITELIST": "DynamicServiceOrchestration,TranslationManager"
       },
-      "image": "arrowhead-java-v530/ah5-blacklist-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-blacklist-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "blacklist"
           ]
-        },
-        "db-blacklist-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -498,6 +391,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "blacklist-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/Blacklist/Blacklist.p12",
           "target": "/certs/Blacklist.p12",
@@ -517,15 +416,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -534,111 +424,14 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Blacklist-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "blacklist-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_blacklist",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "blacklist"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-blacklist-java-spring-db:20261114-v540",
-      "networks": {
-        "db-blacklist-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_BLACKLIST",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_BLACKLIST",
-          "target": "/run/secrets/db-root-password"
+      "depends_on": {
+        "serviceregistry": {
+          "condition": "service_started",
+          "required": true
         }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "blacklist-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/blacklist-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/blacklist-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/blacklist-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
+      },
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Blacklist-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-Blacklist-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -647,24 +440,6 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "certificate-authority-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "amqp-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "serviceregistry": {
-          "condition": "service_started",
-          "required": true
-        },
-        "blacklist": {
-          "condition": "service_healthy",
-          "required": true
-        }
-      },
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -677,15 +452,14 @@
         "SERVICE_REGISTRY_PORT": "8443",
         "SYSMONITOR_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/ah5-certificateauthority-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-certificateauthority-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "certificate-authority"
           ]
-        },
-        "db-certificate-authority-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -723,6 +497,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "certificate-authority-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/CertificateAuthority/CertificateAuthority.p12",
           "target": "/certs/CertificateAuthority.p12",
@@ -735,15 +515,6 @@
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/CertificateAuthority/truststore.p12",
           "target": "/certs/truststore.p12",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
           "read_only": true,
           "bind": {
             "create_host_path": false
@@ -777,123 +548,7 @@
           "read_only": false
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-CertificateAuthority-java-spring"
-      }
-    },
-    "certificate-authority-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_certificate_authority",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "certificateauthority"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-certificateauthority-java-spring-db:20261114-v540",
-      "networks": {
-        "db-certificate-authority-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_CERTIFICATEAUTHORITY",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_CERTIFICATEAUTHORITY",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "certificate-authority-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/certificate-authority-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/certificate-authority-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/certificate-authority-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-CertificateAuthority-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "choreographer": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "choreographer-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
         "amqp-broker": {
           "condition": "service_healthy",
           "required": true
@@ -907,6 +562,15 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-CertificateAuthority-java-spring"
+      }
+    },
+    "choreographer": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -919,15 +583,14 @@
         "MANAGEMENT_POLICY": "sysop-only",
         "ORCHESTRATION_TIMEOUT": "30"
       },
-      "image": "arrowhead-java-v530/ah5-choreographer-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-choreographer-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "choreographer"
           ]
-        },
-        "db-choreographer-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -964,6 +627,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "choreographer-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/Choreographer/Choreographer.p12",
           "target": "/certs/Choreographer.p12",
@@ -983,15 +652,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -1000,111 +660,22 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Choreographer-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "choreographer-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_choreographer",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "choreographer"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-choreographer-java-spring-db:20261114-v540",
-      "networks": {
-        "db-choreographer-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_CHOREOGRAPHER",
-          "target": "/run/secrets/db-password"
+      "depends_on": {
+        "amqp-broker": {
+          "condition": "service_healthy",
+          "required": true
         },
-        {
-          "source": "AH_DB_ROOT_CHOREOGRAPHER",
-          "target": "/run/secrets/db-root-password"
+        "serviceregistry": {
+          "condition": "service_started",
+          "required": true
+        },
+        "blacklist": {
+          "condition": "service_healthy",
+          "required": true
         }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "choreographer-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/choreographer-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/choreographer-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/choreographer-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
+      },
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Choreographer-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-Choreographer-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -1144,7 +715,7 @@
         "LCM_API_WHITELIST": "",
         "LOCAL_CLOUD": "TestCloud",
         "LOCAL_CLOUD_CONFIGURATION_ENABLED": "true",
-        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,graphdbmanager-graphdb,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel",
+        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel",
         "ORGANIZATION": "Company",
         "SERVICE_REGISTRY_ADDRESS": "serviceregistry",
         "SERVICE_REGISTRY_PORT": "8443",
@@ -1152,7 +723,7 @@
         "SYSMONITOR_ENABLED": "true",
         "ARROWHEAD_ADMIN_SYSTEM": "Sysop"
       },
-      "image": "arrowhead-java-v530/ah5-localcloudmanager-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-localcloudmanager-java-spring:20261124-embedded",
       "mem_limit": "805306368",
       "networks": {
         "arrowhead": {
@@ -1225,7 +796,7 @@
         }
       ],
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudManager-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-LocalCloudManager-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -1234,24 +805,6 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "configuration-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "amqp-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "serviceregistry": {
-          "condition": "service_started",
-          "required": true
-        },
-        "blacklist": {
-          "condition": "service_healthy",
-          "required": true
-        }
-      },
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -1265,15 +818,14 @@
         "SERVICE_AUTHORIZATION_ENABLED": "true",
         "CONFIGURATION_MAX_SIZE": "1048576"
       },
-      "image": "arrowhead-java-v530/ah5-configuration-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-configuration-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "configuration"
           ]
-        },
-        "db-configuration-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -1310,6 +862,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "configuration-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/Configuration/Configuration.p12",
           "target": "/certs/Configuration.p12",
@@ -1329,15 +887,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -1346,111 +895,22 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Configuration-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "configuration-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_configuration",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "configuration"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-configuration-java-spring-db:20261114-v540",
-      "networks": {
-        "db-configuration-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_CONFIGURATION",
-          "target": "/run/secrets/db-password"
+      "depends_on": {
+        "amqp-broker": {
+          "condition": "service_healthy",
+          "required": true
         },
-        {
-          "source": "AH_DB_ROOT_CONFIGURATION",
-          "target": "/run/secrets/db-root-password"
+        "serviceregistry": {
+          "condition": "service_started",
+          "required": true
+        },
+        "blacklist": {
+          "condition": "service_healthy",
+          "required": true
         }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "configuration-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/configuration-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/configuration-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/configuration-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
+      },
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Configuration-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-Configuration-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -1460,10 +920,6 @@
       ],
       "command": null,
       "depends_on": {
-        "consumerauthorization-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
         "serviceregistry": {
           "condition": "service_started",
           "required": true
@@ -1495,14 +951,12 @@
         "SPRING_AUTOCONFIGURE_EXCLUDE": "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration",
         "SPRING_CONFIG_IMPORT": "configtree:/run/secrets/",
         "SPRING_DATASOURCE_PASSWORD": "$${ah.db-password}",
-        "SPRING_DATASOURCE_URL": "jdbc:mariadb://consumerauthorization-db:3306/ah_consumer_authorization?sslMode=verify-full&serverSslCert=/etc/arrowhead/db-tls/ca.crt",
         "SYSMONITOR_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/consumer-authorization-java:20261114-v540",
+      "image": "arrowhead-java-v530/consumer-authorization-java:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
-        "arrowhead": null,
-        "db-consumerauthorization": null
+        "arrowhead": null
       },
       "pids_limit": 256,
       "ports": [
@@ -1549,13 +1003,6 @@
       "volumes": [
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/etc/arrowhead/db-tls/ca.crt",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/runtime/ConsumerAuthorization/config/certificate",
           "target": "/app/config/certificate",
           "read_only": true,
@@ -1567,94 +1014,11 @@
           "target": "/crl",
           "read_only": true,
           "bind": {}
-        }
-      ]
-    },
-    "consumerauthorization-db": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": [
-        "--innodb-use-native-aio=0",
-        "--ssl-ca=/etc/mysql/tls/ca.crt",
-        "--ssl-cert=/etc/mysql/tls/server.crt",
-        "--ssl-key=/etc/mysql/tls/server.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "AH_DB_USER": "consumerauthorization",
-        "AH_DB_USER_PASSWORD_FILE": "/run/secrets/db-user-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost"
-        ],
-        "timeout": "3s",
-        "interval": "4s",
-        "retries": 15,
-        "start_period": "20s"
-      },
-      "image": "arrowhead-java-v530/consumer-authorization-db:20261114-v540",
-      "mem_limit": "805306368",
-      "networks": {
-        "db-consumerauthorization": null
-      },
-      "pids_limit": 512,
-      "read_only": true,
-      "restart": "unless-stopped",
-      "secrets": [
-        {
-          "source": "AH_DB_ROOT_CONSUMERAUTHORIZATION",
-          "target": "db-root-password"
         },
-        {
-          "source": "AH_DB_PW_CONSUMERAUTHORIZATION",
-          "target": "db-user-password"
-        }
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "user": "999:999",
-      "volumes": [
         {
           "type": "volume",
-          "source": "consumerauthorization-db",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/consumerauthorization-db",
-          "target": "/etc/mysql/tls",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/zz-arrowhead-system-user-password.sh",
-          "target": "/docker-entrypoint-initdb.d/zz-arrowhead-system-user-password.sh",
-          "read_only": true,
-          "bind": {}
+          "source": "consumerauthorization-state",
+          "target": "/data"
         }
       ]
     },
@@ -1663,28 +1027,6 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "datamanager-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "amqp-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "consumerauthorization": {
-          "condition": "service_started",
-          "required": true
-        },
-        "serviceregistry": {
-          "condition": "service_started",
-          "required": true
-        },
-        "blacklist": {
-          "condition": "service_healthy",
-          "required": true
-        }
-      },
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -1696,15 +1038,14 @@
         "SYSMONITOR_ENABLED": "true",
         "SERVICE_AUTHORIZATION_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/ah5-datamanager-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-datamanager-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "datamanager"
           ]
-        },
-        "db-datamanager-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -1741,6 +1082,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "datamanager-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/DataManager/DataManager.p12",
           "target": "/certs/DataManager.p12",
@@ -1760,15 +1107,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -1777,122 +1115,13 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DataManager-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "datamanager-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_datamanager",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "datamanager"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-datamanager-java-spring-db:20261114-v540",
-      "networks": {
-        "db-datamanager-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_DATAMANAGER",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_DATAMANAGER",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "datamanager-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/datamanager-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/datamanager-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/datamanager-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DataManager-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "device-qos-evaluator": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "device-qos-evaluator-db": {
+        "amqp-broker": {
           "condition": "service_healthy",
+          "required": true
+        },
+        "consumerauthorization": {
+          "condition": "service_started",
           "required": true
         },
         "serviceregistry": {
@@ -1904,6 +1133,16 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-DataManager-java-spring"
+      },
+      "restart": "unless-stopped"
+    },
+    "device-qos-evaluator": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -1920,15 +1159,14 @@
         "ENABLE_BLACKLIST_FILTER": "true",
         "FORCE_BLACKLIST_FILTER": "true"
       },
-      "image": "arrowhead-java-v530/ah5-deviceqosevaluator-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-deviceqosevaluator-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "device-qos-evaluator"
           ]
-        },
-        "db-device-qos-evaluator-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -1965,6 +1203,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "device-qos-evaluator-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/DeviceQoSEvaluator/DeviceQoSEvaluator.p12",
           "target": "/certs/DeviceQoSEvaluator.p12",
@@ -1984,15 +1228,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -2001,111 +1236,18 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DeviceQoSEvaluator-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "device-qos-evaluator-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_device_qos_evaluator",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "deviceqosevaluator"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-deviceqosevaluator-java-spring-db:20261114-v540",
-      "networks": {
-        "db-device-qos-evaluator-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_DEVICEQOSEVALUATOR",
-          "target": "/run/secrets/db-password"
+      "depends_on": {
+        "serviceregistry": {
+          "condition": "service_started",
+          "required": true
         },
-        {
-          "source": "AH_DB_ROOT_DEVICEQOSEVALUATOR",
-          "target": "/run/secrets/db-root-password"
+        "blacklist": {
+          "condition": "service_healthy",
+          "required": true
         }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "device-qos-evaluator-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/device-qos-evaluator-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/device-qos-evaluator-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/device-qos-evaluator-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
+      },
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-DeviceQoSEvaluator-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-DeviceQoSEvaluator-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -2118,9 +1260,9 @@
       "environment": {
         "COMPOSE_PROJECT_NAME": "arrowhead-v53-test-cloud",
         "JAVA_TOOL_OPTIONS": "-Xms32m -Xmx96m -XX:MaxMetaspaceSize=80m -Xss512k -XX:+ExitOnOutOfMemoryError",
-        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,graphdbmanager-graphdb,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel"
+        "MANAGED_SERVICES": "serviceregistry,serviceorchestration-dynamic,serviceorchestration-simple,consumerauthorization,authentication,blacklist,translation-manager,device-qos-evaluator,onboarding,datamanager,graphdbmanager,timemanager,eventhandler,plantdescriptionengine,configuration,choreographer,random-data-producer,sysmonitor,aigym,certificate-authority,mqtt-broker,amqp-broker,gatekeeper,gatetunnel"
       },
-      "image": "arrowhead-java-v530/ah5-localcloudmanager-java-spring-docker-proxy:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-localcloudmanager-java-spring-docker-proxy:20261124-embedded",
       "mem_limit": "268435456",
       "networks": {
         "console-docker": null
@@ -2146,7 +1288,7 @@
         }
       ],
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudManager-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-LocalCloudManager-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -2155,28 +1297,6 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "eventhandler-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "amqp-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "consumerauthorization": {
-          "condition": "service_started",
-          "required": true
-        },
-        "serviceregistry": {
-          "condition": "service_started",
-          "required": true
-        },
-        "blacklist": {
-          "condition": "service_healthy",
-          "required": true
-        }
-      },
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -2189,15 +1309,14 @@
         "MANAGEMENT_POLICY": "sysop-only",
         "SERVICE_AUTHORIZATION_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/ah5-eventhandler-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-eventhandler-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "eventhandler"
           ]
-        },
-        "db-eventhandler-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -2234,6 +1353,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "eventhandler-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/EventHandler/EventHandler.p12",
           "target": "/certs/EventHandler.p12",
@@ -2253,15 +1378,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -2270,125 +1386,12 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-EventHandler-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "eventhandler-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_eventhandler",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "eventhandler"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-eventhandler-java-spring-db:20261114-v540",
-      "networks": {
-        "db-eventhandler-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_EVENTHANDLER",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_EVENTHANDLER",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "eventhandler-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/eventhandler-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/eventhandler-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/eventhandler-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-EventHandler-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "gatekeeper": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "gatekeeper-db": {
+        "amqp-broker": {
           "condition": "service_healthy",
           "required": true
         },
-        "authentication": {
+        "consumerauthorization": {
           "condition": "service_started",
           "required": true
         },
@@ -2401,6 +1404,16 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-EventHandler-java-spring"
+      },
+      "restart": "unless-stopped"
+    },
+    "gatekeeper": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -2422,15 +1435,14 @@
         "SYSMONITOR_ENABLED": "true",
         "GATEKEEPER_RELAY_ENABLED": "false"
       },
-      "image": "arrowhead-java-v530/ah5-gatekeeper-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-gatekeeper-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "gatekeeper"
           ]
-        },
-        "db-gatekeeper-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -2468,6 +1480,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "gatekeeper-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/Gatekeeper/Gatekeeper.p12",
           "target": "/certs/Gatekeeper.p12",
@@ -2480,15 +1498,6 @@
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/Gatekeeper/truststore.p12",
           "target": "/certs/truststore.p12",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
           "read_only": true,
           "bind": {
             "create_host_path": false
@@ -2540,125 +1549,7 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Gatekeeper-java-spring"
-      }
-    },
-    "gatekeeper-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_gatekeeper",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "gatekeeper",
-        "RELAY_CRL_FILE": "/org-crl/ca.crl",
-        "GATEKEEPER_RELAY_ENABLED": "false"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-gatekeeper-java-spring-db:20261114-v540",
-      "networks": {
-        "db-gatekeeper-db": null
-      },
-      "restart": "unless-stopped",
-      "secrets": [
-        {
-          "source": "AH_DB_PW_GATEKEEPER",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_GATEKEEPER",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "gatekeeper-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/gatekeeper-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/gatekeeper-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/gatekeeper-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Gatekeeper-java-spring"
-      }
-    },
-    "gatetunnel": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "gatetunnel-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
         "authentication": {
           "condition": "service_started",
           "required": true
@@ -2672,6 +1563,15 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-Gatekeeper-java-spring"
+      }
+    },
+    "gatetunnel": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "ADVERTISED_ADDRESS": "gatetunnel",
@@ -2699,15 +1599,14 @@
         "SESSION_MAX_AGE_SECONDS": "43200",
         "SYSMONITOR_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/ah5-gatetunnel-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-gatetunnel-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "gatetunnel"
           ]
-        },
-        "db-gatetunnel-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -2745,6 +1644,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "gatetunnel-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/GateTunnel/GateTunnel.p12",
           "target": "/certs/GateTunnel.p12",
@@ -2757,15 +1662,6 @@
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/GateTunnel/truststore.p12",
           "target": "/certs/truststore.p12",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
           "read_only": true,
           "bind": {
             "create_host_path": false
@@ -2817,130 +1713,8 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-GateTunnel-java-spring"
-      }
-    },
-    "gatetunnel-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_gatetunnel",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "gatetunnel",
-        "RELAY_CRL_FILE": "/org-crl/ca.crl",
-        "RELAY_CRL_FILES": "/org-crl/ca.crl"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-gatetunnel-java-spring-db:20261114-v540",
-      "networks": {
-        "db-gatetunnel-db": null
-      },
-      "restart": "unless-stopped",
-      "secrets": [
-        {
-          "source": "AH_DB_PW_GATETUNNEL",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_GATETUNNEL",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "gatetunnel-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/gatetunnel-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/gatetunnel-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/gatetunnel-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-GateTunnel-java-spring"
-      }
-    },
-    "graphdbmanager": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "graphdbmanager-graphdb": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "amqp-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "consumerauthorization": {
+        "authentication": {
           "condition": "service_started",
           "required": true
         },
@@ -2953,11 +1727,19 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-GateTunnel-java-spring"
+      }
+    },
+    "graphdbmanager": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
         "AMQP_PORT": "5671",
-        "GRAPHDB_URL": "http://graphdbmanager-graphdb:7200",
         "LOCAL_CLOUD": "TestCloud",
         "ORGANIZATION": "Company",
         "SERVICE_REGISTRY_ADDRESS": "serviceregistry",
@@ -2965,15 +1747,14 @@
         "SYSMONITOR_ENABLED": "true",
         "SERVICE_AUTHORIZATION_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/ah5-graphdbmanager-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-graphdbmanager-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "graphdbmanager"
           ]
-        },
-        "db-graphdbmanager-graphdb": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -2994,10 +1775,6 @@
         {
           "source": "AH_PW_GDM",
           "target": "ah.identity-password"
-        },
-        {
-          "source": "AH_GRAPHDB_PW_GRAPHDBMANAGER",
-          "target": "ah.graphdb-password"
         }
       ],
       "security_opt": [
@@ -3009,6 +1786,12 @@
       ],
       "user": "10001:10001",
       "volumes": [
+        {
+          "type": "volume",
+          "source": "graphdbmanager-state",
+          "target": "/data",
+          "volume": {}
+        },
         {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/GraphDBManager/GraphDBManager.p12",
@@ -3037,69 +1820,13 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-GraphDBManager-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "graphdbmanager-graphdb": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
-      "entrypoint": null,
-      "environment": {
-        "GDB_HEAP_SIZE": "768m",
-        "GRAPHDB_ADMIN_PASSWORD_FILE": "/run/secrets/graphdb-admin-password",
-        "GRAPHDB_REPOSITORY": "graphdbmanager",
-        "GRAPHDB_USER": "graphdbmanager",
-        "GRAPHDB_USER_PASSWORD_FILE": "/run/secrets/graphdb-password"
-      },
-      "image": "arrowhead-java-v530/ah5-graphdbmanager-java-spring-graphdb:20261114-v540",
-      "mem_limit": "2147483648",
-      "networks": {
-        "db-graphdbmanager-graphdb": null
-      },
-      "pids_limit": 512,
-      "read_only": true,
-      "secrets": [
-        {
-          "source": "AH_GRAPHDB_ADMIN_GRAPHDBMANAGER",
-          "target": "/run/secrets/graphdb-admin-password"
-        },
-        {
-          "source": "AH_GRAPHDB_PW_GRAPHDBMANAGER",
-          "target": "/run/secrets/graphdb-password"
-        }
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "tmpfs": [
-        "/tmp:rw,nosuid,nodev,size=128m,mode=1777"
-      ],
-      "user": "10001:10001",
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "graphdbmanager-graphdb-state",
-          "target": "/opt/graphdb/home",
-          "volume": {}
-        }
-      ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-GraphDBManager-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "localcloudconfigurator": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "localcloudconfigurator-db": {
+        "amqp-broker": {
           "condition": "service_healthy",
+          "required": true
+        },
+        "consumerauthorization": {
+          "condition": "service_started",
           "required": true
         },
         "serviceregistry": {
@@ -3111,6 +1838,16 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-GraphDBManager-java-spring"
+      },
+      "restart": "unless-stopped"
+    },
+    "localcloudconfigurator": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -3129,15 +1866,14 @@
       "extra_hosts": [
         "host.docker.internal=host-gateway"
       ],
-      "image": "arrowhead-java-v530/ah5-localcloudconfigurator-java:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-localcloudconfigurator-java:20261124-embedded",
       "mem_limit": "805306368",
       "networks": {
         "arrowhead": {
           "aliases": [
             "localcloudconfigurator"
           ]
-        },
-        "db-localcloudconfigurator-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -3174,6 +1910,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "localcloudconfigurator-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/LocalCloudConfigurator/LocalCloudConfigurator.p12",
           "target": "/certs/LocalCloudConfigurator.p12",
@@ -3186,15 +1928,6 @@
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/LocalCloudConfigurator/truststore.p12",
           "target": "/certs/truststore.p12",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
           "read_only": true,
           "bind": {
             "create_host_path": false
@@ -3219,111 +1952,18 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudConfigurator-java"
-      },
-      "restart": "unless-stopped"
-    },
-    "localcloudconfigurator-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_localcloudconfigurator",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "localcloudconfigurator"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-localcloudconfigurator-java-db:20261114-v540",
-      "networks": {
-        "db-localcloudconfigurator-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_LOCALCLOUDCONFIGURATOR",
-          "target": "/run/secrets/db-password"
+      "depends_on": {
+        "serviceregistry": {
+          "condition": "service_started",
+          "required": true
         },
-        {
-          "source": "AH_DB_ROOT_LOCALCLOUDCONFIGURATOR",
-          "target": "/run/secrets/db-root-password"
+        "blacklist": {
+          "condition": "service_healthy",
+          "required": true
         }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "localcloudconfigurator-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/localcloudconfigurator-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/localcloudconfigurator-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/localcloudconfigurator-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
+      },
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-LocalCloudConfigurator-java"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-LocalCloudConfigurator-java"
       },
       "restart": "unless-stopped"
     },
@@ -3427,20 +2067,6 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "onboarding-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "serviceregistry": {
-          "condition": "service_started",
-          "required": true
-        },
-        "blacklist": {
-          "condition": "service_healthy",
-          "required": true
-        }
-      },
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -3452,15 +2078,14 @@
         "SYSMONITOR_ENABLED": "true",
         "ARROWHEAD_SSL_CRL_FILE": "/crl/ca.crl,/crl-manufacturer/manufacturer-ca.crl"
       },
-      "image": "arrowhead-java-v530/ah5-onboarding-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-onboarding-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "onboarding"
           ]
-        },
-        "db-onboarding-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -3497,6 +2122,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "onboarding-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/Onboarding/Onboarding.p12",
           "target": "/certs/Onboarding.p12",
@@ -3509,15 +2140,6 @@
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/Onboarding/truststore.p12",
           "target": "/certs/truststore.p12",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
           "read_only": true,
           "bind": {
             "create_host_path": false
@@ -3542,132 +2164,7 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Onboarding-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "onboarding-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_onboarding",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "onboarding"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-onboarding-java-spring-db:20261114-v540",
-      "networks": {
-        "db-onboarding-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_ONBOARDING",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_ONBOARDING",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "onboarding-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/onboarding-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/onboarding-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/onboarding-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-Onboarding-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "plantdescriptionengine": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "plantdescriptionengine-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "amqp-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "consumerauthorization": {
-          "condition": "service_started",
-          "required": true
-        },
         "serviceregistry": {
           "condition": "service_started",
           "required": true
@@ -3677,6 +2174,16 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-Onboarding-java-spring"
+      },
+      "restart": "unless-stopped"
+    },
+    "plantdescriptionengine": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -3691,15 +2198,14 @@
         "SERVICE_AUTHORIZATION_ENABLED": "true",
         "PLANT_ALARM_IGNORED_SYSTEMS": "ServiceRegistry,DynamicServiceOrchestration,SimpleStoreServiceOrchestration,ConsumerAuthorization,Authentication,Blacklist,DeviceQoSEvaluator,TranslationManager,SysMonitor,LocalCloudManager,PlantDescriptionEngine,Sysop"
       },
-      "image": "arrowhead-java-v530/ah5-plantdescriptionengine-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-plantdescriptionengine-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "plantdescriptionengine"
           ]
-        },
-        "db-plantdescriptionengine-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -3736,6 +2242,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "plantdescriptionengine-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/PlantDescriptionEngine/PlantDescriptionEngine.p12",
           "target": "/certs/PlantDescriptionEngine.p12",
@@ -3755,15 +2267,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -3772,111 +2275,26 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-PlantDescriptionEngine-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "plantdescriptionengine-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_plantdescriptionengine",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "plantdescriptionengine"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-plantdescriptionengine-java-spring-db:20261114-v540",
-      "networks": {
-        "db-plantdescriptionengine-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_PLANTDESCRIPTIONENGINE",
-          "target": "/run/secrets/db-password"
+      "depends_on": {
+        "amqp-broker": {
+          "condition": "service_healthy",
+          "required": true
         },
-        {
-          "source": "AH_DB_ROOT_PLANTDESCRIPTIONENGINE",
-          "target": "/run/secrets/db-root-password"
+        "consumerauthorization": {
+          "condition": "service_started",
+          "required": true
+        },
+        "serviceregistry": {
+          "condition": "service_started",
+          "required": true
+        },
+        "blacklist": {
+          "condition": "service_healthy",
+          "required": true
         }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "plantdescriptionengine-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/plantdescriptionengine-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/plantdescriptionengine-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/plantdescriptionengine-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
+      },
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-PlantDescriptionEngine-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-PlantDescriptionEngine-java-spring"
       },
       "restart": "unless-stopped"
     },
@@ -3987,10 +2405,6 @@
       ],
       "command": null,
       "depends_on": {
-        "serviceorchestration-dynamic-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
         "serviceregistry": {
           "condition": "service_started",
           "required": true
@@ -4022,14 +2436,12 @@
         "SPRING_AUTOCONFIGURE_EXCLUDE": "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration",
         "SPRING_CONFIG_IMPORT": "configtree:/run/secrets/",
         "SPRING_DATASOURCE_PASSWORD": "$${ah.db-password}",
-        "SPRING_DATASOURCE_URL": "jdbc:mariadb://serviceorchestration-dynamic-db:3306/ah_serviceorchestration_dynamic?sslMode=verify-full&serverSslCert=/etc/arrowhead/db-tls/ca.crt",
         "SYSMONITOR_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/serviceorchestration-dynamic-java:20261114-v540",
+      "image": "arrowhead-java-v530/serviceorchestration-dynamic-java:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
-        "arrowhead": null,
-        "db-serviceorchestration-dynamic": null
+        "arrowhead": null
       },
       "pids_limit": 256,
       "ports": [
@@ -4068,13 +2480,6 @@
       "volumes": [
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/etc/arrowhead/db-tls/ca.crt",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/runtime/DynamicServiceOrchestration/config/certificate",
           "target": "/app/config/certificate",
           "read_only": true,
@@ -4086,101 +2491,11 @@
           "target": "/crl",
           "read_only": true,
           "bind": {}
-        }
-      ]
-    },
-    "serviceorchestration-dynamic-db": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": [
-        "--innodb-use-native-aio=0",
-        "--ssl-ca=/etc/mysql/tls/ca.crt",
-        "--ssl-cert=/etc/mysql/tls/server.crt",
-        "--ssl-key=/etc/mysql/tls/server.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "AH_DB_USER": "serviceorchestration-dynamic",
-        "AH_DB_USER_PASSWORD_FILE": "/run/secrets/db-user-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost"
-        ],
-        "timeout": "3s",
-        "interval": "4s",
-        "retries": 15,
-        "start_period": "20s"
-      },
-      "image": "arrowhead-java-v530/serviceorchestration-dynamic-db:20261114-v540",
-      "mem_limit": "805306368",
-      "networks": {
-        "db-serviceorchestration-dynamic": null
-      },
-      "pids_limit": 512,
-      "read_only": true,
-      "restart": "unless-stopped",
-      "secrets": [
-        {
-          "source": "AH_DB_ROOT_DYNAMICSERVICEORCHESTRATION",
-          "target": "db-root-password"
         },
-        {
-          "source": "AH_DB_PW_DYNAMICSERVICEORCHESTRATION",
-          "target": "db-user-password"
-        }
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "user": "999:999",
-      "volumes": [
         {
           "type": "volume",
-          "source": "serviceorchestration-dynamic-db",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/zy-dso-plant-rules.sql",
-          "target": "/docker-entrypoint-initdb.d/zy-dso-plant-rules.sql",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/serviceorchestration-dynamic-db",
-          "target": "/etc/mysql/tls",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/zz-arrowhead-system-user-password.sh",
-          "target": "/docker-entrypoint-initdb.d/zz-arrowhead-system-user-password.sh",
-          "read_only": true,
-          "bind": {}
+          "source": "serviceorchestration-dynamic-state",
+          "target": "/data"
         }
       ]
     },
@@ -4190,10 +2505,6 @@
       ],
       "command": null,
       "depends_on": {
-        "serviceorchestration-simple-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
         "serviceregistry": {
           "condition": "service_started",
           "required": true
@@ -4226,14 +2537,12 @@
         "SPRING_AUTOCONFIGURE_EXCLUDE": "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration",
         "SPRING_CONFIG_IMPORT": "configtree:/run/secrets/",
         "SPRING_DATASOURCE_PASSWORD": "$${ah.db-password}",
-        "SPRING_DATASOURCE_URL": "jdbc:mariadb://serviceorchestration-simple-db:3306/ah_serviceorchestration_simple?sslMode=verify-full&serverSslCert=/etc/arrowhead/db-tls/ca.crt",
         "SYSMONITOR_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/serviceorchestration-simple-java:20261114-v540",
+      "image": "arrowhead-java-v530/serviceorchestration-simple-java:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
-        "arrowhead": null,
-        "db-serviceorchestration-simple": null
+        "arrowhead": null
       },
       "pids_limit": 256,
       "ports": [
@@ -4272,13 +2581,6 @@
       "volumes": [
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/etc/arrowhead/db-tls/ca.crt",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/runtime/SimpleStoreServiceOrchestration/config/certificate",
           "target": "/app/config/certificate",
           "read_only": true,
@@ -4290,94 +2592,11 @@
           "target": "/crl",
           "read_only": true,
           "bind": {}
-        }
-      ]
-    },
-    "serviceorchestration-simple-db": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": [
-        "--innodb-use-native-aio=0",
-        "--ssl-ca=/etc/mysql/tls/ca.crt",
-        "--ssl-cert=/etc/mysql/tls/server.crt",
-        "--ssl-key=/etc/mysql/tls/server.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "AH_DB_USER": "serviceorchestration-simple",
-        "AH_DB_USER_PASSWORD_FILE": "/run/secrets/db-user-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost"
-        ],
-        "timeout": "3s",
-        "interval": "4s",
-        "retries": 15,
-        "start_period": "20s"
-      },
-      "image": "arrowhead-java-v530/serviceorchestration-simple-db:20261114-v540",
-      "mem_limit": "805306368",
-      "networks": {
-        "db-serviceorchestration-simple": null
-      },
-      "pids_limit": 512,
-      "read_only": true,
-      "restart": "unless-stopped",
-      "secrets": [
-        {
-          "source": "AH_DB_ROOT_SIMPLESTORESERVICEORCHESTRATION",
-          "target": "db-root-password"
         },
-        {
-          "source": "AH_DB_PW_SIMPLESTORESERVICEORCHESTRATION",
-          "target": "db-user-password"
-        }
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "user": "999:999",
-      "volumes": [
         {
           "type": "volume",
-          "source": "serviceorchestration-simple-db",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/serviceorchestration-simple-db",
-          "target": "/etc/mysql/tls",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/zz-arrowhead-system-user-password.sh",
-          "target": "/docker-entrypoint-initdb.d/zz-arrowhead-system-user-password.sh",
-          "read_only": true,
-          "bind": {}
+          "source": "serviceorchestration-simple-state",
+          "target": "/data"
         }
       ]
     },
@@ -4386,12 +2605,7 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "serviceregistry-db": {
-          "condition": "service_healthy",
-          "required": true
-        }
-      },
+      "depends_on": {},
       "entrypoint": null,
       "environment": {
         "ARROWHEAD_SSL_CRL_FILE": "/crl/ca.crl",
@@ -4419,7 +2633,6 @@
         "SPRING_AUTOCONFIGURE_EXCLUDE": "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration",
         "SPRING_CONFIG_IMPORT": "configtree:/run/secrets/",
         "SPRING_DATASOURCE_PASSWORD": "$${ah.db-password}",
-        "SPRING_DATASOURCE_URL": "jdbc:mariadb://serviceregistry-db:3306/ah_serviceregistry?sslMode=verify-full&serverSslCert=/etc/arrowhead/db-tls/ca.crt",
         "SYSMONITOR_ENABLED": "true",
         "SYSMONITOR_SSL_KEY_STORE": "file:/app/config/certificate/ServiceRegistry.p12",
         "SYSMONITOR_SSL_KEY_STORE_PASSWORD": "$${ah.store-password}",
@@ -4437,11 +2650,10 @@
         "interval": "10s",
         "retries": 12
       },
-      "image": "arrowhead-java-v530/serviceregistry-java:20261114-v540",
+      "image": "arrowhead-java-v530/serviceregistry-java:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
-        "arrowhead": null,
-        "db-serviceregistry": null
+        "arrowhead": null
       },
       "pids_limit": 256,
       "ports": [
@@ -4484,13 +2696,6 @@
       "volumes": [
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/etc/arrowhead/db-tls/ca.crt",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/runtime/ServiceRegistry/config/certificate",
           "target": "/app/config/certificate",
           "read_only": true,
@@ -4502,101 +2707,11 @@
           "target": "/crl",
           "read_only": true,
           "bind": {}
-        }
-      ]
-    },
-    "serviceregistry-db": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": [
-        "--innodb-use-native-aio=0",
-        "--ssl-ca=/etc/mysql/tls/ca.crt",
-        "--ssl-cert=/etc/mysql/tls/server.crt",
-        "--ssl-key=/etc/mysql/tls/server.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "AH_DB_USER": "serviceregistry",
-        "AH_DB_USER_PASSWORD_FILE": "/run/secrets/db-user-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost"
-        ],
-        "timeout": "3s",
-        "interval": "4s",
-        "retries": 15,
-        "start_period": "20s"
-      },
-      "image": "arrowhead-java-v530/serviceregistry-db:20261114-v540",
-      "mem_limit": "805306368",
-      "networks": {
-        "db-serviceregistry": null
-      },
-      "pids_limit": 512,
-      "read_only": true,
-      "restart": "unless-stopped",
-      "secrets": [
-        {
-          "source": "AH_DB_ROOT_SERVICEREGISTRY",
-          "target": "db-root-password"
         },
-        {
-          "source": "AH_DB_PW_SERVICEREGISTRY",
-          "target": "db-user-password"
-        }
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "user": "999:999",
-      "volumes": [
         {
           "type": "volume",
-          "source": "serviceregistry-db",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/serviceregistry-db",
-          "target": "/etc/mysql/tls",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/zy-serviceregistry-amqp-templates.sql",
-          "target": "/docker-entrypoint-initdb.d/zy-serviceregistry-amqp-templates.sql",
-          "read_only": true,
-          "bind": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/zz-arrowhead-system-user-password.sh",
-          "target": "/docker-entrypoint-initdb.d/zz-arrowhead-system-user-password.sh",
-          "read_only": true,
-          "bind": {}
+          "source": "serviceregistry-state",
+          "target": "/data"
         }
       ]
     },
@@ -4605,20 +2720,6 @@
         "ALL"
       ],
       "command": null,
-      "depends_on": {
-        "solocalcloudconfigurator-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "serviceregistry": {
-          "condition": "service_started",
-          "required": true
-        },
-        "blacklist": {
-          "condition": "service_healthy",
-          "required": true
-        }
-      },
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -4628,19 +2729,18 @@
         "SERVICE_REGISTRY_ADDRESS": "serviceregistry",
         "SERVICE_REGISTRY_PORT": "8443",
         "SOLC_API_WHITELIST": "",
-        "SOLC_SOURCE_COMMIT": "ee975d75151056cafb4d45e6d51e42ffc27877ec",
+        "SOLC_SOURCE_COMMIT": "035cc50c24506bfd5dc0ea67823ef47743916c1d",
         "SOLC_SOURCE_REPOSITORY": "https://github.com/jerkerdelsing/Eclipse-Arrowhead-java.git",
         "SYSMONITOR_ENABLED": "true"
       },
-      "image": "arrowhead-java-v530/ah5-solocalcloudconfigurator-java:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-solocalcloudconfigurator-java:20261124-embedded",
       "mem_limit": "805306368",
       "networks": {
         "arrowhead": {
           "aliases": [
             "solocalcloudconfigurator"
           ]
-        },
-        "db-solocalcloudconfigurator-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -4677,6 +2777,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "solocalcloudconfigurator-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/SoLocalCloudConfigurator/SoLocalCloudConfigurator.p12",
           "target": "/certs/SoLocalCloudConfigurator.p12",
@@ -4696,15 +2802,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -4713,145 +2810,7 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-SoLocalCloudConfigurator-java"
-      },
-      "restart": "unless-stopped"
-    },
-    "solocalcloudconfigurator-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON",
-        "--max-allowed-packet=64M"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_solocalcloudconfigurator",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "solocalcloudconfigurator"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-solocalcloudconfigurator-java-db:20261114-v540",
-      "networks": {
-        "db-solocalcloudconfigurator-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_SOLOCALCLOUDCONFIGURATOR",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_SOLOCALCLOUDCONFIGURATOR",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "solocalcloudconfigurator-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/solocalcloudconfigurator-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/solocalcloudconfigurator-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/solocalcloudconfigurator-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-SoLocalCloudConfigurator-java"
-      },
-      "restart": "unless-stopped"
-    },
-    "sysmonitor": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "sysmonitor-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "amqp-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "authentication": {
-          "condition": "service_started",
-          "required": true
-        },
-        "consumerauthorization": {
-          "condition": "service_started",
-          "required": true
-        },
-        "mqtt-broker": {
-          "condition": "service_healthy",
-          "required": true
-        },
-        "serviceorchestration-dynamic": {
-          "condition": "service_started",
-          "required": true
-        },
         "serviceregistry": {
           "condition": "service_started",
           "required": true
@@ -4861,6 +2820,16 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-SoLocalCloudConfigurator-java"
+      },
+      "restart": "unless-stopped"
+    },
+    "sysmonitor": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -4877,15 +2846,14 @@
         "SYSMONITOR_PRUNE_INTERVAL_SECONDS": "3600",
         "SYSMONITOR_RETENTION_DAYS": "30"
       },
-      "image": "arrowhead-java-v530/ah5-sysmonitor-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-sysmonitor-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "sysmonitor"
           ]
-        },
-        "db-sysmonitor-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -4923,6 +2891,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "sysmonitor-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/SysMonitor/SysMonitor.p12",
           "target": "/certs/SysMonitor.p12",
@@ -4942,15 +2916,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -4959,128 +2924,24 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-SysMonitor-java-spring"
-      }
-    },
-    "sysmonitor-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_sysmonitor",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "sysmonitor"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-sysmonitor-java-spring-db:20261114-v540",
-      "networks": {
-        "db-sysmonitor-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_SYSMONITOR",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_SYSMONITOR",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "sysmonitor-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/sysmonitor-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/sysmonitor-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/sysmonitor-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-SysMonitor-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "timemanager": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "timemanager-db": {
-          "condition": "service_healthy",
-          "required": true
-        },
         "amqp-broker": {
           "condition": "service_healthy",
           "required": true
         },
+        "authentication": {
+          "condition": "service_started",
+          "required": true
+        },
         "consumerauthorization": {
+          "condition": "service_started",
+          "required": true
+        },
+        "mqtt-broker": {
+          "condition": "service_healthy",
+          "required": true
+        },
+        "serviceorchestration-dynamic": {
           "condition": "service_started",
           "required": true
         },
@@ -5093,6 +2954,15 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-SysMonitor-java-spring"
+      }
+    },
+    "timemanager": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -5107,15 +2977,14 @@
         "NTP_SERVER_LIST": "pool.ntp.org,time.cloudflare.com",
         "TIME_TIMEZONE": "Europe/Stockholm"
       },
-      "image": "arrowhead-java-v530/ah5-timemanager-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-timemanager-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "timemanager"
           ]
-        },
-        "db-timemanager-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -5152,6 +3021,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "timemanager-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/TimeManager/TimeManager.p12",
           "target": "/certs/TimeManager.p12",
@@ -5171,15 +3046,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -5188,122 +3054,13 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TimeManager-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "timemanager-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_timemanager",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "timemanager"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-timemanager-java-spring-db:20261114-v540",
-      "networks": {
-        "db-timemanager-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_TIMEMANAGER",
-          "target": "/run/secrets/db-password"
-        },
-        {
-          "source": "AH_DB_ROOT_TIMEMANAGER",
-          "target": "/run/secrets/db-root-password"
-        }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "timemanager-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/timemanager-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/timemanager-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/timemanager-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TimeManager-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "translation-manager": {
-      "cap_drop": [
-        "ALL"
-      ],
-      "command": null,
       "depends_on": {
-        "translation-manager-db": {
+        "amqp-broker": {
           "condition": "service_healthy",
+          "required": true
+        },
+        "consumerauthorization": {
+          "condition": "service_started",
           "required": true
         },
         "serviceregistry": {
@@ -5315,6 +3072,16 @@
           "required": true
         }
       },
+      "labels": {
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-TimeManager-java-spring"
+      },
+      "restart": "unless-stopped"
+    },
+    "translation-manager": {
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
       "entrypoint": null,
       "environment": {
         "AMQP_HOST": "amqp-broker",
@@ -5330,15 +3097,14 @@
         "ENABLE_BLACKLIST_FILTER": "true",
         "FORCE_BLACKLIST_FILTER": "true"
       },
-      "image": "arrowhead-java-v530/ah5-translationmanager-java-spring:20261114-v540",
+      "image": "arrowhead-java-v530/ah5-translationmanager-java-spring:20261124-embedded",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {
           "aliases": [
             "translation-manager"
           ]
-        },
-        "db-translation-manager-db": {}
+        }
       },
       "pids_limit": 256,
       "ports": [
@@ -5375,6 +3141,12 @@
       "user": "10001:10001",
       "volumes": [
         {
+          "type": "volume",
+          "source": "translation-manager-state",
+          "target": "/data",
+          "volume": {}
+        },
+        {
           "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/primary-stores/TranslationManager/TranslationManager.p12",
           "target": "/certs/TranslationManager.p12",
@@ -5394,15 +3166,6 @@
         },
         {
           "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/ca.crt",
-          "target": "/certs/db-ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
           "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/crl",
           "target": "/crl",
           "read_only": true,
@@ -5411,111 +3174,18 @@
           }
         }
       ],
-      "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TranslationManager-java-spring"
-      },
-      "restart": "unless-stopped"
-    },
-    "translation-manager-db": {
-      "command": [
-        "mysqld",
-        "--ssl-ca=/tls/ca.crt",
-        "--ssl-cert=/tls/db.crt",
-        "--ssl-key=/tls/db.key",
-        "--require-secure-transport=ON"
-      ],
-      "entrypoint": [
-        "/usr/local/bin/ah-db-entrypoint.sh"
-      ],
-      "environment": {
-        "MYSQL_DATABASE": "ah_translation_manager",
-        "MYSQL_PASSWORD_FILE": "/run/secrets/db-password",
-        "MYSQL_ROOT_PASSWORD_FILE": "/run/secrets/db-root-password",
-        "MYSQL_USER": "translationmanager"
-      },
-      "healthcheck": {
-        "test": [
-          "CMD-SHELL",
-          "mysqladmin ping --protocol=tcp -h127.0.0.1 --silent"
-        ],
-        "timeout": "4s",
-        "interval": "5s",
-        "retries": 30
-      },
-      "image": "arrowhead-java-v530/ah5-translationmanager-java-spring-db:20261114-v540",
-      "networks": {
-        "db-translation-manager-db": null
-      },
-      "secrets": [
-        {
-          "source": "AH_DB_PW_TRANSLATIONMANAGER",
-          "target": "/run/secrets/db-password"
+      "depends_on": {
+        "serviceregistry": {
+          "condition": "service_started",
+          "required": true
         },
-        {
-          "source": "AH_DB_ROOT_TRANSLATIONMANAGER",
-          "target": "/run/secrets/db-root-password"
+        "blacklist": {
+          "condition": "service_healthy",
+          "required": true
         }
-      ],
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "translation-manager-db-state",
-          "target": "/var/lib/mysql",
-          "volume": {}
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/translation-manager-db/ca.crt",
-          "target": "/tls/ca.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/translation-manager-db/server.crt",
-          "target": "/tls/db.crt",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/security/x509/db/translation-manager-db/server.key",
-          "target": "/tls/db.key",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        },
-        {
-          "type": "bind",
-          "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/db/mysql-entrypoint.sh",
-          "target": "/usr/local/bin/ah-db-entrypoint.sh",
-          "read_only": true,
-          "bind": {
-            "create_host_path": false
-          }
-        }
-      ],
-      "user": "999:999",
-      "read_only": true,
-      "tmpfs": [
-        "/var/run/mysqld:rw,nosuid,nodev,uid=999,gid=999,mode=0750,size=1m",
-        "/tmp:rw,nosuid,nodev,mode=1777,size=64m"
-      ],
-      "cap_drop": [
-        "ALL"
-      ],
-      "security_opt": [
-        "no-new-privileges:true"
-      ],
-      "mem_limit": "805306368",
-      "pids_limit": 512,
+      },
       "labels": {
-        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java/ah5-TranslationManager-java-spring"
+        "eu.arrowhead.primary-source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-TranslationManager-java-spring"
       },
       "restart": "unless-stopped"
     }
@@ -5535,322 +3205,80 @@
         ]
       },
       "internal": true
-    },
-    "db-authentication": {
-      "name": "arrowhead-v53-test-cloud_db-authentication",
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.1.0/28"
-          }
-        ]
-      },
-      "internal": true
-    },
-    "db-consumerauthorization": {
-      "name": "arrowhead-v53-test-cloud_db-consumerauthorization",
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.6.0/28"
-          }
-        ]
-      },
-      "internal": true
-    },
-    "db-serviceorchestration-dynamic": {
-      "name": "arrowhead-v53-test-cloud_db-serviceorchestration-dynamic",
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.16.0/28"
-          }
-        ]
-      },
-      "internal": true
-    },
-    "db-serviceorchestration-simple": {
-      "name": "arrowhead-v53-test-cloud_db-serviceorchestration-simple",
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.17.0/28"
-          }
-        ]
-      },
-      "internal": true
-    },
-    "db-serviceregistry": {
-      "name": "arrowhead-v53-test-cloud_db-serviceregistry",
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.18.0/28"
-          }
-        ]
-      },
-      "internal": true
-    },
-    "db-blacklist-db": {
-      "name": "arrowhead-v53-test-cloud_db-blacklist-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.2.0/28"
-          }
-        ]
-      }
-    },
-    "db-certificate-authority-db": {
-      "name": "arrowhead-v53-test-cloud_db-certificate-authority-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.3.0/28"
-          }
-        ]
-      }
-    },
-    "db-choreographer-db": {
-      "name": "arrowhead-v53-test-cloud_db-choreographer-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.4.0/28"
-          }
-        ]
-      }
-    },
-    "db-configuration-db": {
-      "name": "arrowhead-v53-test-cloud_db-configuration-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.5.0/28"
-          }
-        ]
-      }
-    },
-    "db-datamanager-db": {
-      "name": "arrowhead-v53-test-cloud_db-datamanager-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.7.0/28"
-          }
-        ]
-      }
-    },
-    "db-device-qos-evaluator-db": {
-      "name": "arrowhead-v53-test-cloud_db-device-qos-evaluator-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.8.0/28"
-          }
-        ]
-      }
-    },
-    "db-eventhandler-db": {
-      "name": "arrowhead-v53-test-cloud_db-eventhandler-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.9.0/28"
-          }
-        ]
-      }
-    },
-    "db-gatetunnel-db": {
-      "name": "arrowhead-v53-test-cloud_db-gatetunnel-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.11.0/28"
-          }
-        ]
-      }
-    },
-    "db-gatekeeper-db": {
-      "name": "arrowhead-v53-test-cloud_db-gatekeeper-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.10.0/28"
-          }
-        ]
-      }
-    },
-    "db-graphdbmanager-graphdb": {
-      "name": "arrowhead-v53-test-cloud_db-graphdbmanager-graphdb",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.12.0/28"
-          }
-        ]
-      }
-    },
-    "db-localcloudconfigurator-db": {
-      "name": "arrowhead-v53-test-cloud_db-localcloudconfigurator-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.13.0/28"
-          }
-        ]
-      }
-    },
-    "db-onboarding-db": {
-      "name": "arrowhead-v53-test-cloud_db-onboarding-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.14.0/28"
-          }
-        ]
-      }
-    },
-    "db-plantdescriptionengine-db": {
-      "name": "arrowhead-v53-test-cloud_db-plantdescriptionengine-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.15.0/28"
-          }
-        ]
-      }
-    },
-    "db-solocalcloudconfigurator-db": {
-      "name": "arrowhead-v53-test-cloud_db-solocalcloudconfigurator-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.30.0/28"
-          }
-        ]
-      }
-    },
-    "db-sysmonitor-db": {
-      "name": "arrowhead-v53-test-cloud_db-sysmonitor-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.19.0/28"
-          }
-        ]
-      }
-    },
-    "db-timemanager-db": {
-      "name": "arrowhead-v53-test-cloud_db-timemanager-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.20.0/28"
-          }
-        ]
-      }
-    },
-    "db-translation-manager-db": {
-      "name": "arrowhead-v53-test-cloud_db-translation-manager-db",
-      "internal": true,
-      "ipam": {
-        "config": [
-          {
-            "subnet": "10.253.21.0/28"
-          }
-        ]
-      }
     }
   },
   "volumes": {
     "amqp-data": {
       "name": "arrowhead-v53-test-cloud_amqp-data"
     },
-    "authentication-db": {
-      "name": "arrowhead-v53-test-cloud_authentication-db"
+    "authentication-state": {
+      "name": "arrowhead-v53-test-cloud_authentication-state"
     },
-    "blacklist-db-state": {
-      "name": "arrowhead-v53-test-cloud_blacklist-db-state"
+    "blacklist-state": {
+      "name": "arrowhead-v53-test-cloud_blacklist-state"
     },
-    "certificate-authority-db-state": {
-      "name": "arrowhead-v53-test-cloud_certificate-authority-db-state"
+    "certificate-authority-state": {
+      "name": "arrowhead-v53-test-cloud_certificate-authority-state"
     },
-    "choreographer-db-state": {
-      "name": "arrowhead-v53-test-cloud_choreographer-db-state"
+    "choreographer-state": {
+      "name": "arrowhead-v53-test-cloud_choreographer-state"
     },
-    "configuration-db-state": {
-      "name": "arrowhead-v53-test-cloud_configuration-db-state"
+    "configuration-state": {
+      "name": "arrowhead-v53-test-cloud_configuration-state"
     },
-    "consumerauthorization-db": {
-      "name": "arrowhead-v53-test-cloud_consumerauthorization-db"
+    "consumerauthorization-state": {
+      "name": "arrowhead-v53-test-cloud_consumerauthorization-state"
     },
-    "datamanager-db-state": {
-      "name": "arrowhead-v53-test-cloud_datamanager-db-state"
+    "datamanager-state": {
+      "name": "arrowhead-v53-test-cloud_datamanager-state"
     },
-    "device-qos-evaluator-db-state": {
-      "name": "arrowhead-v53-test-cloud_device-qos-evaluator-db-state"
+    "device-qos-evaluator-state": {
+      "name": "arrowhead-v53-test-cloud_device-qos-evaluator-state"
     },
-    "eventhandler-db-state": {
-      "name": "arrowhead-v53-test-cloud_eventhandler-db-state"
+    "eventhandler-state": {
+      "name": "arrowhead-v53-test-cloud_eventhandler-state"
     },
-    "gatekeeper-db-state": {
-      "name": "arrowhead-v53-test-cloud_gatekeeper-db-state"
+    "gatekeeper-state": {
+      "name": "arrowhead-v53-test-cloud_gatekeeper-state"
     },
-    "gatetunnel-db-state": {
-      "name": "arrowhead-v53-test-cloud_gatetunnel-db-state"
+    "gatetunnel-state": {
+      "name": "arrowhead-v53-test-cloud_gatetunnel-state"
     },
-    "graphdbmanager-graphdb-state": {
-      "name": "arrowhead-v53-test-cloud_graphdbmanager-graphdb-state"
+    "graphdbmanager-state": {
+      "name": "arrowhead-v53-test-cloud_graphdbmanager-state"
     },
-    "localcloudconfigurator-db-state": {
-      "name": "arrowhead-v53-test-cloud_localcloudconfigurator-db-state"
+    "localcloudconfigurator-state": {
+      "name": "arrowhead-v53-test-cloud_localcloudconfigurator-state"
     },
     "mqtt-data": {
       "name": "arrowhead-v53-test-cloud_mqtt-data"
     },
-    "onboarding-db-state": {
-      "name": "arrowhead-v53-test-cloud_onboarding-db-state"
+    "onboarding-state": {
+      "name": "arrowhead-v53-test-cloud_onboarding-state"
     },
-    "plantdescriptionengine-db-state": {
-      "name": "arrowhead-v53-test-cloud_plantdescriptionengine-db-state"
+    "plantdescriptionengine-state": {
+      "name": "arrowhead-v53-test-cloud_plantdescriptionengine-state"
     },
-    "serviceorchestration-dynamic-db": {
-      "name": "arrowhead-v53-test-cloud_serviceorchestration-dynamic-db"
+    "serviceorchestration-dynamic-state": {
+      "name": "arrowhead-v53-test-cloud_serviceorchestration-dynamic-state"
     },
-    "serviceorchestration-simple-db": {
-      "name": "arrowhead-v53-test-cloud_serviceorchestration-simple-db"
+    "serviceorchestration-simple-state": {
+      "name": "arrowhead-v53-test-cloud_serviceorchestration-simple-state"
     },
-    "serviceregistry-db": {
-      "name": "arrowhead-v53-test-cloud_serviceregistry-db"
+    "serviceregistry-state": {
+      "name": "arrowhead-v53-test-cloud_serviceregistry-state"
     },
-    "solocalcloudconfigurator-db-state": {
-      "name": "arrowhead-v53-test-cloud_solocalcloudconfigurator-db-state"
+    "solocalcloudconfigurator-state": {
+      "name": "arrowhead-v53-test-cloud_solocalcloudconfigurator-state"
     },
-    "sysmonitor-db-state": {
-      "name": "arrowhead-v53-test-cloud_sysmonitor-db-state"
+    "sysmonitor-state": {
+      "name": "arrowhead-v53-test-cloud_sysmonitor-state"
     },
-    "timemanager-db-state": {
-      "name": "arrowhead-v53-test-cloud_timemanager-db-state"
+    "timemanager-state": {
+      "name": "arrowhead-v53-test-cloud_timemanager-state"
     },
-    "translation-manager-db-state": {
-      "name": "arrowhead-v53-test-cloud_translation-manager-db-state"
+    "translation-manager-state": {
+      "name": "arrowhead-v53-test-cloud_translation-manager-state"
     }
   },
   "secrets": {
@@ -5921,74 +3349,6 @@
     "AH_DB_PW_TRANSLATIONMANAGER": {
       "name": "arrowhead-v53-test-cloud_AH_DB_PW_TRANSLATIONMANAGER",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_PW_TRANSLATIONMANAGER"
-    },
-    "AH_DB_ROOT_AUTHENTICATION": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_AUTHENTICATION",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_AUTHENTICATION"
-    },
-    "AH_DB_ROOT_BLACKLIST": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_BLACKLIST",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_BLACKLIST"
-    },
-    "AH_DB_ROOT_CHOREOGRAPHER": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_CHOREOGRAPHER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_CHOREOGRAPHER"
-    },
-    "AH_DB_ROOT_CONFIGURATION": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_CONFIGURATION",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_CONFIGURATION"
-    },
-    "AH_DB_ROOT_CONSUMERAUTHORIZATION": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_CONSUMERAUTHORIZATION",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_CONSUMERAUTHORIZATION"
-    },
-    "AH_DB_ROOT_DATAMANAGER": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_DATAMANAGER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_DATAMANAGER"
-    },
-    "AH_DB_ROOT_DEVICEQOSEVALUATOR": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_DEVICEQOSEVALUATOR",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_DEVICEQOSEVALUATOR"
-    },
-    "AH_DB_ROOT_DYNAMICSERVICEORCHESTRATION": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_DYNAMICSERVICEORCHESTRATION",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_DYNAMICSERVICEORCHESTRATION"
-    },
-    "AH_DB_ROOT_EVENTHANDLER": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_EVENTHANDLER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_EVENTHANDLER"
-    },
-    "AH_DB_ROOT_ONBOARDING": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_ONBOARDING",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_ONBOARDING"
-    },
-    "AH_DB_ROOT_PLANTDESCRIPTIONENGINE": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_PLANTDESCRIPTIONENGINE",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_PLANTDESCRIPTIONENGINE"
-    },
-    "AH_DB_ROOT_SERVICEREGISTRY": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_SERVICEREGISTRY",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_SERVICEREGISTRY"
-    },
-    "AH_DB_ROOT_SIMPLESTORESERVICEORCHESTRATION": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_SIMPLESTORESERVICEORCHESTRATION",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_SIMPLESTORESERVICEORCHESTRATION"
-    },
-    "AH_DB_ROOT_TIMEMANAGER": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_TIMEMANAGER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_TIMEMANAGER"
-    },
-    "AH_DB_ROOT_TRANSLATIONMANAGER": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_TRANSLATIONMANAGER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_TRANSLATIONMANAGER"
-    },
-    "AH_GRAPHDB_ADMIN_GRAPHDBMANAGER": {
-      "name": "arrowhead-v53-test-cloud_AH_GRAPHDB_ADMIN_GRAPHDBMANAGER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_GRAPHDB_ADMIN_GRAPHDBMANAGER"
-    },
-    "AH_GRAPHDB_PW_GRAPHDBMANAGER": {
-      "name": "arrowhead-v53-test-cloud_AH_GRAPHDB_PW_GRAPHDBMANAGER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_GRAPHDB_PW_GRAPHDBMANAGER"
     },
     "AH_PW_AIG": {
       "name": "arrowhead-v53-test-cloud_AH_PW_AIG",
@@ -6158,10 +3518,6 @@
       "name": "arrowhead-v53-test-cloud_AH_DB_PW_CERTIFICATEAUTHORITY",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_PW_CERTIFICATEAUTHORITY"
     },
-    "AH_DB_ROOT_CERTIFICATEAUTHORITY": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_CERTIFICATEAUTHORITY",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_CERTIFICATEAUTHORITY"
-    },
     "AH_STORE_PW_GT": {
       "name": "arrowhead-v53-test-cloud_AH_STORE_PW_GT",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_STORE_PW_GT"
@@ -6170,10 +3526,6 @@
       "name": "arrowhead-v53-test-cloud_AH_DB_PW_GATETUNNEL",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_PW_GATETUNNEL"
     },
-    "AH_DB_ROOT_GATETUNNEL": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_GATETUNNEL",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_GATETUNNEL"
-    },
     "AH_STORE_PW_GK": {
       "name": "arrowhead-v53-test-cloud_AH_STORE_PW_GK",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_STORE_PW_GK"
@@ -6181,10 +3533,6 @@
     "AH_DB_PW_GATEKEEPER": {
       "name": "arrowhead-v53-test-cloud_AH_DB_PW_GATEKEEPER",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_PW_GATEKEEPER"
-    },
-    "AH_DB_ROOT_GATEKEEPER": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_GATEKEEPER",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_GATEKEEPER"
     },
     "AH_STORE_PW_LCM": {
       "name": "arrowhead-v53-test-cloud_AH_STORE_PW_LCM",
@@ -6202,10 +3550,6 @@
       "name": "arrowhead-v53-test-cloud_AH_DB_PW_LOCALCLOUDCONFIGURATOR",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_PW_LOCALCLOUDCONFIGURATOR"
     },
-    "AH_DB_ROOT_LOCALCLOUDCONFIGURATOR": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_LOCALCLOUDCONFIGURATOR",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_LOCALCLOUDCONFIGURATOR"
-    },
     "AH_STORE_PW_SOLC": {
       "name": "arrowhead-v53-test-cloud_AH_STORE_PW_SOLC",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_STORE_PW_SOLC"
@@ -6218,10 +3562,6 @@
       "name": "arrowhead-v53-test-cloud_AH_DB_PW_SOLOCALCLOUDCONFIGURATOR",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_PW_SOLOCALCLOUDCONFIGURATOR"
     },
-    "AH_DB_ROOT_SOLOCALCLOUDCONFIGURATOR": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_SOLOCALCLOUDCONFIGURATOR",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_SOLOCALCLOUDCONFIGURATOR"
-    },
     "AH_STORE_PW_SM": {
       "name": "arrowhead-v53-test-cloud_AH_STORE_PW_SM",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_STORE_PW_SM"
@@ -6229,10 +3569,6 @@
     "AH_DB_PW_SYSMONITOR": {
       "name": "arrowhead-v53-test-cloud_AH_DB_PW_SYSMONITOR",
       "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_PW_SYSMONITOR"
-    },
-    "AH_DB_ROOT_SYSMONITOR": {
-      "name": "arrowhead-v53-test-cloud_AH_DB_ROOT_SYSMONITOR",
-      "file": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/secrets/AH_DB_ROOT_SYSMONITOR"
     }
   }
 }

@@ -80,11 +80,6 @@ def main() -> None:
             for part in ("ah5-common-java-spring", "ah5-core-java-spring"):
                 shutil.copytree(PRIMARY / part, pathlib.Path(tmp) / part, ignore=shutil.ignore_patterns("target", "*.log"))
             for module in sorted(set(CORE.values())):
-                db = f"{REGISTRY}/{module}-db:{TAG}"
-                r = build(db, pathlib.Path(tmp) / "ah5-core-java-spring", HERE / "core-db/Dockerfile", args,
-                          logs / f"{module}-db.log", ["--build-arg", f"MODULE={module}"])
-                results[db] = r | {"source": str(PRIMARY / "ah5-core-java-spring" / module / "src/main/resources/database")}
-                print(r["result"], db, flush=True)
                 dockerfile = next(p for p in (pathlib.Path(tmp) / "ah5-core-java-spring" / module / "docker").glob("Dockerfile-*")
                                   if not p.name.endswith("-DB"))
                 native = f"{REGISTRY}/{module}-java-native:{TAG}"

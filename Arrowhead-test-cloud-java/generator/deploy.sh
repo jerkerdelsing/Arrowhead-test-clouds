@@ -18,7 +18,7 @@ up)
   grep -q '^user LocalCloudConfigurator\.' amqp/acl || printf '\nuser LocalCloudConfigurator.TestCloud.Company.arrowhead.eu\npublish TestCloud.sysmonitor.LocalCloudConfigurator.LocalCloudConfigurator.#\n' >> amqp/acl
   grep -q '^user SoLocalCloudConfigurator\.' amqp/acl || printf '\nuser SoLocalCloudConfigurator.TestCloud.Company.arrowhead.eu\npublish TestCloud.sysmonitor.SoLocalCloudConfigurator.SoLocalCloudConfigurator.#\n' >> amqp/acl
   python3 scripts/generate-amqp-definitions.py
-  $C up -d --no-build --pull never --wait serviceregistry authentication-db authentication
+  $C up -d --no-build --pull never --wait serviceregistry authentication
   ./scripts/provision-authentication-identities.sh
   ./generator/provision-extra-identities.sh
   ./scripts/configure-authentication-mtls-registry.sh
@@ -32,13 +32,10 @@ up)
   ./scripts/configure-orchestration-security-policies.sh
   ./scripts/configure-orchestration-dependency-policies.sh
   ./scripts/configure-random-producer-policy.sh
-  $C up -d --no-build --pull never --wait serviceorchestration-dynamic-db
-  ./scripts/migrate-dso-plant-rules-db.sh
   $C up -d --no-build --pull never --wait --wait-timeout 600 $($C config --services | grep -v '^random-data-producer$')
   for s in gatekeeper gatetunnel sysmonitor; do ./scripts/configure-$s-policy.sh; done
   ./scripts/configure-all-sysmonitor-policies.sh
   for s in timemanager deviceqosevaluator eventhandler plantdescriptionengine configuration choreographer; do ./scripts/configure-$s-policy.sh; done
-  ./scripts/migrate-onboarding-db.sh
   for s in onboarding aigym datamanager-monitoring; do ./scripts/configure-$s-policy.sh; done
   ./scripts/configure-graphdbmanager-policies.sh
   ./scripts/configure-localcloudconfigurator-policy.sh

@@ -7,7 +7,7 @@ project name, own cloud CA and secrets, no inter-cloud federation (no relay peer
 get a relay identity of this cloud's CA only so that they start).
 
 Every core and support system image is built from the primary source Eclipse-Arrowhead-java. Support systems are
-deployed as their primary folders define them (compose.yaml of each ah5-<System> folder: app, private MySQL, PKCS#12
+deployed as their primary folders define them (compose.yaml of each ah5-<System> folder: app with its embedded database, PKCS#12
 stores, file secrets), joined to this cloud's network and credentials. Core systems, brokers and RandomDataProducer keep
 this cloud's definition (generator/base-compose.json) with the core images replaced. Output: generator/compose.json.
 """
@@ -15,14 +15,17 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import pathlib
 import subprocess
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
-PRIMARY = ROOT.parents[1] / "Eclipse-Arrowhead-java"
+# a git worktree of the primary repository may be selected while its changes are not merged
+PRIMARY = pathlib.Path(os.environ.get("ARROWHEAD_JAVA_SOURCE") or ROOT.parents[1] / "Eclipse-Arrowhead-java").resolve()
 # v5.3.0 (2026-11-11): every image built from the primary source Eclipse-Arrowhead-java at its current main
-TAG = "20261114-v540"
+# 2026-11-24: every system keeps its data in its own embedded database (no database containers or networks)
+TAG = "20261124-embedded"
 REGISTRY = "arrowhead-java-v530"
 PROJECT = "arrowhead-v53-test-cloud"
 X509, STORES, BUNDLES, CRL = ROOT / "security/x509", ROOT / "security/primary-stores", ROOT / "security/bundles", ROOT / "security/crl"
@@ -62,7 +65,7 @@ CLOUD_POLICY_ENV = ("MANAGEMENT_POLICY", "MANAGEMENT_WHITELIST", "BLACKLIST_CHEC
 PEER_CRLS: dict[str, tuple[pathlib.Path, str]] = {}
 HARDENING = ("user", "read_only", "tmpfs", "cap_drop", "security_opt", "mem_limit", "pids_limit")
 # Cloud services kept from ../compose.yaml (everything else is replaced by the primary deployments).
-KEEP = set(CORE) | {f"{c}-db" for c in CORE} | {"amqp-broker", "mqtt-broker", "random-data-producer"}
+KEEP = set(CORE) | {"amqp-broker", "mqtt-broker", "random-data-producer"}
 # SOS-16 (2026-11-10): refreshed images of the kept services (the producer from ../random-data-producer, linux/amd64)
 KEEP_IMAGES = {
     "amqp-broker": "rabbitmq:4.3.7-alpine@sha256:68fd0566c1c5a5aef2d7b3ad55af8be503a767c1ff8646d7088c8c7946270cf9",
@@ -93,8 +96,6 @@ def bind_source(system: str, folder: str, service: str, target: str, source: str
     bundle = {"Gatekeeper": "gatekeeper", "GateTunnel": "gatetunnel"}.get(system)
     if target == f"/certs/{system}.p12" or target == "/certs/truststore.p12":
         return str(STORES / system / pathlib.Path(target).name), False
-    if target == "/certs/db-ca.crt":
-        return str(X509 / "ca.crt"), False
     if target == "/crl":
         return str(CRL), system == "CertificateAuthority"
     if target in ("/certs/ca.crt", "/certs/ca.key") and system == "CertificateAuthority":
@@ -104,9 +105,6 @@ def bind_source(system: str, folder: str, service: str, target: str, source: str
         return str(CRL), False
     if bundle and target.startswith(f"/certs/{bundle}-relay") or bundle and target == "/certs/org-ca.crt":
         return str(BUNDLES / bundle / pathlib.Path(target).name), False
-    if target.startswith("/tls/"):
-        name = {"ca.crt": "ca.crt", "db.crt": "server.crt", "db.key": "server.key"}[pathlib.Path(target).name]
-        return str(X509 / "db" / service / name), False
     if target == "/var/run/docker.sock":
         return source, False
     raise SystemExit(f"{service}: no cloud mapping for bind target {target} ({source})")
@@ -114,9 +112,9 @@ def bind_source(system: str, folder: str, service: str, target: str, source: str
 
 def secret_name(system: str, ident: str, store: str, db: str | None, key: str) -> str:
     table = {"store-password": store, "identity-password": ident, "console-password-hash": "CONSOLE_PASSWORD_HASH",
-             "graphdb-password": "AH_GRAPHDB_PW_GRAPHDBMANAGER", "graphdb-admin-password": "AH_GRAPHDB_ADMIN_GRAPHDBMANAGER"}
+             }
     if db:
-        table |= {"db-password": f"AH_DB_PW_{db}", "db-root-password": f"AH_DB_ROOT_{db}"}
+        table |= {"db-password": f"AH_DB_PW_{db}"}
     if key not in table:
         raise SystemExit(f"{system}: no cloud secret for primary secret {key}")
     return table[key]
@@ -135,7 +133,11 @@ def main() -> None:
         services[name]["image"] = f"{REGISTRY}/{module}-java:{TAG}"
         services[name].pop("build", None)
         services[name].pop("platform", None)  # primary builds are native; the amd64 pin belonged to the release base
-        services[f"{name}-db"]["image"] = f"{REGISTRY}/{module}-db:{TAG}"  # core-db/Dockerfile
+        # embedded database in the system's private volume, mounted by this service only
+        services[name]["environment"].pop("SPRING_DATASOURCE_URL", None)
+        services[name]["networks"] = {n: c for n, c in services[name]["networks"].items() if not n.startswith("db-")}
+        services[name]["volumes"] = [v for v in services[name]["volumes"] if v["target"] != "/etc/arrowhead/db-tls/ca.crt"]
+        services[name]["volumes"].append({"type": "volume", "source": f"{name}-state", "target": "/data"})
         # SOS-16 (2026-11-10): J14's exclusion names the Spring Boot 4 package of the auto-configuration (the Boot 3 name is
         # ignored by Boot 4, which then logs a generated password)
         env = services[name].get("environment")
@@ -143,8 +145,6 @@ def main() -> None:
             env["SPRING_AUTOCONFIGURE_EXCLUDE"] = env["SPRING_AUTOCONFIGURE_EXCLUDE"].replace(
                 "org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
                 "org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration")
-        services[f"{name}-db"].pop("platform", None)
-        services[f"{name}-db"].pop("build", None)
     networks = {k: v for k, v in cloud["networks"].items()}
     secrets = dict(cloud.get("secrets", {}))
     for folder, (system, ident, store, db) in SUPPORT.items():
@@ -229,7 +229,7 @@ def main() -> None:
             # container hardening (J3) the primary definition leaves out: its MySQL services run as root with a writable
             # root filesystem and no limits, AIGym has no PID limit (smoke-security, 2026-11-09). Missing keys only,
             # from this cloud's definition of the same service, for new databases from its blacklist-db.
-            template = old.get(svc) or (old["blacklist-db"] if svc.endswith("-db") else {})
+            template = old.get(svc) or ({})
             for k in HARDENING:
                 if k in template and not s.get(k):
                     s[k] = copy.deepcopy(template[k])
@@ -252,14 +252,6 @@ def main() -> None:
                 s["volumes"].append({"type": "bind", "source": str(ROOT / "security/manufacturer-crl"),
                                      "target": "/crl-manufacturer", "read_only": True, "bind": {"create_host_path": False}})
                 env["ARROWHEAD_SSL_CRL_FILE"] = "/crl/ca.crl,/crl-manufacturer/manufacturer-ca.crl"
-            # J7: the stock MySQL entrypoint of the primary database images keeps the *_PASSWORD_FILE values in mysqld's
-            # environment; this cloud's wrapper (db/mysql-entrypoint.sh) runs it unchanged but drops them before exec
-            if svc.endswith("-db"):
-                s["entrypoint"] = ["/usr/local/bin/ah-db-entrypoint.sh"]
-                s["command"] = ["mysqld"] + [c for c in s.get("command", []) if c != "mysqld"]
-                s["volumes"].append({"type": "bind", "source": str(ROOT / "db/mysql-entrypoint.sh"),
-                                     "target": "/usr/local/bin/ah-db-entrypoint.sh", "read_only": True,
-                                     "bind": {"create_host_path": False}})
             s.setdefault("labels", {})["eu.arrowhead.primary-source"] = str(PRIMARY / folder)
             if svc in services:
                 raise SystemExit(f"duplicate service {svc}")
@@ -279,6 +271,10 @@ def main() -> None:
             if "graphdbmanager" in managed and "graphdbmanager-graphdb" not in managed:
                 managed.insert(managed.index("graphdbmanager") + 1, "graphdbmanager-graphdb")
                 env["MANAGED_SERVICES"] = ",".join(managed)
+    for s in services.values():
+        env = s.get("environment") or {}
+        if "MANAGED_SERVICES" in env:
+            env["MANAGED_SERVICES"] = ",".join(m for m in (x.strip() for x in env["MANAGED_SERVICES"].split(",")) if m in services)
     used = {v["source"] for s in services.values() for v in s.get("volumes", []) if v.get("type") == "volume"}
     volumes = {v: {"name": f"{PROJECT}_{v}"} for v in sorted(used)}
     used_nets = {n for s in services.values() for n in (s.get("networks") or {})}
@@ -287,7 +283,7 @@ def main() -> None:
     # exhausted ("all predefined address pools have been fully subnetted", 2026-11-09). 10.253.0.0/16 is unused here.
     # networks added after the first deployment keep a pinned subnet, so the numbering of the existing ones does not shift
     # (Docker refuses to change the subnet of an existing network; 2026-11-11, SoLocalCloudConfigurator)
-    pinned = {"db-solocalcloudconfigurator-db": "10.253.30.0/28"}
+    pinned = {}
     for i, key in enumerate(sorted(k for k in networks if k in used_nets and networks[k].get("internal") and k not in pinned)):
         networks[key] = {**networks[key], "ipam": {"config": [{"subnet": f"10.253.{i}.0/28"}]}}
     for key, subnet in pinned.items():

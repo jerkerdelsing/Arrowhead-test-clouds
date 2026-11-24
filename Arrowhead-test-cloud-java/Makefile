@@ -50,7 +50,7 @@ up: $(DATAMANAGER_JAR) | $(JAVA_JARS)
 	@./scripts/generate-x509.sh
 	@$(MAKE) validate
 	@# Build here as well: a later rebuild would recreate ServiceRegistry and drop the interfaces added below.
-	@$(COMPOSE) up -d --build --wait serviceregistry authentication-db authentication
+	@$(COMPOSE) up -d --build --wait serviceregistry authentication
 	@# The outsourced ServiceRegistry can verify tokens only after its own identity exists: provision first.
 	@./scripts/provision-authentication-identities.sh
 	@./scripts/configure-authentication-mtls-registry.sh
@@ -73,8 +73,6 @@ up: $(DATAMANAGER_JAR) | $(JAVA_JARS)
 	@# every system orchestrates its dependencies: grant them before the systems start using them
 	@./scripts/configure-orchestration-dependency-policies.sh
 	@./scripts/configure-random-producer-policy.sh
-	@$(COMPOSE) up -d --build --wait serviceorchestration-dynamic-db
-	@./scripts/migrate-dso-plant-rules-db.sh
 	@$(COMPOSE) up -d --build --wait
 	@./scripts/configure-gatekeeper-policy.sh
 	@./scripts/configure-gatetunnel-policy.sh
@@ -86,7 +84,6 @@ up: $(DATAMANAGER_JAR) | $(JAVA_JARS)
 	@./scripts/configure-plantdescriptionengine-policy.sh
 	@./scripts/configure-configuration-policy.sh
 	@./scripts/configure-choreographer-policy.sh
-	@./scripts/migrate-onboarding-db.sh
 	@./scripts/configure-onboarding-policy.sh
 	@./scripts/configure-aigym-policy.sh
 	@./scripts/configure-datamanager-monitoring-policy.sh
@@ -110,16 +107,15 @@ up-monitor:
 up-orchestration-manager:
 	@./scripts/generate-x509.sh
 	@$(MAKE) validate
-	@$(COMPOSE) --profile simple up -d --wait serviceorchestration-simple-db serviceorchestration-simple
+	@$(COMPOSE) --profile simple up -d --wait serviceorchestration-simple
 	@$(COMPOSE) up -d --build --wait cloud-monitor-api cloud-monitor-ui
 
 up-onboarding:
 	@./scripts/generate-x509.sh
 	@$(MAKE) validate
-	@$(COMPOSE) up -d --wait serviceregistry authentication-db authentication consumerauthorization onboarding-db
+	@$(COMPOSE) up -d --wait serviceregistry authentication consumerauthorization
 	@./scripts/provision-authentication-identities.sh
 	@./scripts/configure-authentication-mtls-registry.sh
-	@./scripts/migrate-onboarding-db.sh
 	@./scripts/configure-onboarding-policy.sh
 	@$(COMPOSE) up -d --build --wait onboarding cloud-monitor-api cloud-monitor-ui
 
@@ -137,8 +133,8 @@ up-graphdbmanager: | $(GRAPHDBMANAGER_JAR)
 	@./scripts/configure-orchestration-dependency-policies.sh
 	@./scripts/configure-all-sysmonitor-policies.sh
 	@# build and start only these two: --build on a plain up would rebuild their running dependencies too
-	@$(COMPOSE) build graphdbmanager-graphdb graphdbmanager
-	@$(COMPOSE) up -d --no-deps --wait graphdbmanager-graphdb graphdbmanager
+	@$(COMPOSE) build graphdbmanager
+	@$(COMPOSE) up -d --no-deps --wait graphdbmanager
 
 configure-graphdbmanager-policies:
 	@./scripts/configure-graphdbmanager-policies.sh
@@ -179,8 +175,6 @@ up-plantdescriptionengine: | ../ah5-support-java-spring/PlantDescriptionEngine/t
 	@./scripts/generate-x509.sh
 	@$(MAKE) validate
 	@./scripts/provision-plantdescriptionengine-identity.sh
-	@$(COMPOSE) up -d --build --wait serviceorchestration-dynamic-db
-	@./scripts/migrate-dso-plant-rules-db.sh
 	@./scripts/configure-orchestration-dependency-policies.sh
 	@$(COMPOSE) up -d --build --wait serviceorchestration-dynamic plantdescriptionengine
 	@./scripts/configure-plantdescriptionengine-policy.sh
