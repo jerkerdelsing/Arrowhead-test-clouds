@@ -26,6 +26,8 @@ PRIMARY = pathlib.Path(os.environ.get("ARROWHEAD_JAVA_SOURCE") or ROOT.parents[1
 # v5.3.0 (2026-11-11): every image built from the primary source Eclipse-Arrowhead-java at its current main
 # 2026-11-24: every system keeps its data in its own embedded database (no database containers or networks)
 TAG = "20261124-embedded"
+# Systems rebuilt on their own since then.
+TAGS = {"ah5-SysMonitor-java-spring": "20261125-orchestrator"}  # names DynamicServiceOrchestration as its orchestrator
 REGISTRY = "arrowhead-java-v530"
 PROJECT = "arrowhead-v53-test-cloud"
 X509, STORES, BUNDLES, CRL = ROOT / "security/x509", ROOT / "security/primary-stores", ROOT / "security/bundles", ROOT / "security/crl"
@@ -82,13 +84,14 @@ def render(folder: pathlib.Path) -> dict:
 
 def image(folder: str, service: str, primary: dict) -> str:
     base = f"{REGISTRY}/{folder.lower()}"
+    tag = TAGS.get(folder, TAG)
     if service.endswith("-db"):
-        return f"{base}-db:{TAG}"
+        return f"{base}-db:{tag}"
     if service.endswith("-graphdb"):
-        return f"{base}-graphdb:{TAG}"
+        return f"{base}-graphdb:{tag}"
     if service == "docker-proxy":
-        return f"{base}-docker-proxy:{TAG}"
-    return f"{base}:{TAG}"
+        return f"{base}-docker-proxy:{tag}"
+    return f"{base}:{tag}"
 
 
 def bind_source(system: str, folder: str, service: str, target: str, source: str) -> tuple[str, bool]:

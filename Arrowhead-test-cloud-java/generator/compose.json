@@ -2846,7 +2846,7 @@
         "SYSMONITOR_PRUNE_INTERVAL_SECONDS": "3600",
         "SYSMONITOR_RETENTION_DAYS": "30"
       },
-      "image": "arrowhead-java-v530/ah5-sysmonitor-java-spring:20261124-embedded",
+      "image": "arrowhead-java-v530/ah5-sysmonitor-java-spring:20261125-orchestrator",
       "mem_limit": "1073741824",
       "networks": {
         "arrowhead": {

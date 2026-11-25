@@ -1085,5 +1085,13 @@
     "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/generator/build-logs/serviceregistry-java.log",
     "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-core-java-spring/serviceregistry",
     "adapter": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/generator/core-adapter"
+  },
+  "arrowhead-java-v530/ah5-sysmonitor-java-spring:20261125-orchestrator": {
+    "image": "arrowhead-java-v530/ah5-sysmonitor-java-spring:20261125-orchestrator",
+    "result": "PASS",
+    "seconds": 15,
+    "tests": "Tests run: 64, Failures: 0, Errors: 0, Skipped: 1",
+    "log": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Arrowhead-test-clouds/Arrowhead-test-cloud-java/generator/build-logs/ah5-sysmonitor-java-spring_20261125-orchestrator.log",
+    "source": "/Users/jerkerdelsing/Work/lule/EISLAB/Project/Eclipse/Eclipse-Arrowhead-java-embedded-db/ah5-SysMonitor-java-spring"
   }
 }
